@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash, Filter } from 'lucide-react';
 import {
   Table,
@@ -35,83 +34,12 @@ interface ControlEntry {
   scheduled: string;
 }
 
-const ControlTable = () => {
-  const initialEntries: ControlEntry[] = [
-    {
-      date: "01/02/2025",
-      trip: "AUTOPORT",
-      time: "6:06",
-      oldTrip: "",
-      km: "",
-      fleet: "",
-      preBox: "",
-      boxInside: "AP1",
-      quantity: 11,
-      shift: 1,
-      cargoType: "Distribuição",
-      region: "AP",
-      status: "",
-      exchange: "",
-      manifestDate: "01/02/2025",
-      scheduled: "",
-    },
-    {
-      date: "01/02/2025",
-      trip: "AUTOPORT",
-      time: "6:06",
-      oldTrip: "",
-      km: "",
-      fleet: "",
-      preBox: "",
-      boxInside: "AP2",
-      quantity: 11,
-      shift: 1,
-      cargoType: "Distribuição",
-      region: "AP",
-      status: "",
-      exchange: "",
-      manifestDate: "01/02/2025",
-      scheduled: "",
-    },
-    {
-      date: "01/02/2025",
-      trip: "AUTOPORT",
-      time: "6:06",
-      oldTrip: "",
-      km: "",
-      fleet: "",
-      preBox: "",
-      boxInside: "AP3",
-      quantity: 11,
-      shift: 1,
-      cargoType: "Distribuição",
-      region: "AP",
-      status: "",
-      exchange: "",
-      manifestDate: "01/02/2025",
-      scheduled: "",
-    },
-    {
-      date: "01/02/2025",
-      trip: "508938",
-      time: "7:34",
-      oldTrip: "",
-      km: "",
-      fleet: "",
-      preBox: "331",
-      boxInside: "6",
-      quantity: 11,
-      shift: 1,
-      cargoType: "Distribuição",
-      region: "S",
-      status: "",
-      exchange: "",
-      manifestDate: "01/02/2025",
-      scheduled: "",
-    },
-  ];
+interface ControlTableProps {
+  onEntryChange?: (entries: ControlEntry[]) => void;
+}
 
-  const [entries, setEntries] = useState<ControlEntry[]>(initialEntries);
+const ControlTable = ({ onEntryChange }: ControlTableProps) => {
+  const [entries, setEntries] = useState<ControlEntry[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<Partial<Record<keyof ControlEntry, string>>>({});
 
@@ -135,20 +63,22 @@ const ControlTable = () => {
       scheduled: "",
     };
     
-    setEntries([...entries, newEntry]);
+    const updatedEntries = [...entries, newEntry];
+    setEntries(updatedEntries);
+    onEntryChange?.(updatedEntries);
   };
 
   const handleDeleteEntry = (index: number) => {
-    const newEntries = [...entries];
-    newEntries.splice(index, 1);
-    setEntries(newEntries);
+    const updatedEntries = entries.filter((_, i) => i !== index);
+    setEntries(updatedEntries);
+    onEntryChange?.(updatedEntries);
   };
 
-  const handleFilterChange = (key: keyof ControlEntry, value: string) => {
-    setFilters({
-      ...filters,
-      [key]: value,
-    });
+  const handleEntryChange = (index: number, field: keyof ControlEntry, value: any) => {
+    const updatedEntries = [...entries];
+    updatedEntries[index] = { ...updatedEntries[index], [field]: value };
+    setEntries(updatedEntries);
+    onEntryChange?.(updatedEntries);
   };
 
   const filteredEntries = entries.filter(entry => {
@@ -207,14 +137,16 @@ const ControlTable = () => {
               {showFilter && (
                 <TableRow>
                   <TableHead></TableHead>
-                  {Object.keys(initialEntries[0]).map((key) => (
+                  {Object.keys(entries[0] || {}).map((key) => (
                     <TableHead key={key}>
                       <input
                         type="text"
                         placeholder={`Filtrar ${key}...`}
                         className="w-full p-1 text-xs border rounded"
                         value={filters[key as keyof ControlEntry] || ''}
-                        onChange={(e) => handleFilterChange(key as keyof ControlEntry, e.target.value)}
+                        onChange={(e) => {
+                          handleFilterChange(key as keyof ControlEntry, e.target.value)
+                        }}
                       />
                     </TableHead>
                   ))}
@@ -233,22 +165,16 @@ const ControlTable = () => {
                       <Trash size={16} />
                     </button>
                   </TableCell>
-                  <TableCell>{entry.date}</TableCell>
-                  <TableCell>{entry.trip}</TableCell>
-                  <TableCell>{entry.time}</TableCell>
-                  <TableCell>{entry.oldTrip}</TableCell>
-                  <TableCell>{entry.km}</TableCell>
-                  <TableCell>{entry.fleet}</TableCell>
-                  <TableCell>{entry.preBox}</TableCell>
-                  <TableCell>{entry.boxInside}</TableCell>
-                  <TableCell>{entry.quantity}</TableCell>
-                  <TableCell>{entry.shift}</TableCell>
-                  <TableCell>{entry.cargoType}</TableCell>
-                  <TableCell>{entry.region}</TableCell>
-                  <TableCell>{entry.status}</TableCell>
-                  <TableCell>{entry.exchange}</TableCell>
-                  <TableCell>{entry.manifestDate}</TableCell>
-                  <TableCell>{entry.scheduled}</TableCell>
+                  {Object.entries(entry).map(([key, value]) => (
+                    <TableCell key={key}>
+                      <input
+                        type={typeof value === 'number' ? 'number' : 'text'}
+                        value={value}
+                        onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                        className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                      />
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>

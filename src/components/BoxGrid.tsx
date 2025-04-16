@@ -53,12 +53,16 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
   };
 
   return (
-    <div 
-      className={`border border-gray-200 p-2 rounded-md ${getBackgroundColor()} transition-colors cursor-pointer relative`}
-      onClick={handleClick}
-    >
-      <div className="text-xs text-gray-600 mb-1 font-semibold">{number}</div>
-      <div className="text-sm font-medium">{displayValue()}</div>
+    <div className="group relative">
+      <div 
+        className={`w-[120px] h-[100px] rounded-[20px] ${getBackgroundColor()} 
+                   shadow-[rgba(50,50,93,0.25)_0px_30px_50px_-12px_inset,rgba(0,0,0,0.3)_0px_18px_26px_-18px_inset] 
+                   transition-colors cursor-pointer p-4 flex flex-col justify-between`}
+        onClick={handleClick}
+      >
+        <div className="text-sm font-semibold text-gray-600">{number}</div>
+        <div className="text-base font-medium text-center">{displayValue()}</div>
+      </div>
       <button 
         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hidden group-hover:block"
         onClick={(e) => {
