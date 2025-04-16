@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash, Filter } from 'lucide-react';
 import {
@@ -21,8 +20,6 @@ interface ControlEntry {
   trip: string;
   time: string;
   oldTrip: string;
-  km: string;
-  fleet: string;
   preBox: string;
   boxInside: string;
   quantity: number;
@@ -30,9 +27,7 @@ interface ControlEntry {
   cargoType: string;
   region: string;
   status: string;
-  exchange: string;
   manifestDate: string;
-  scheduled: string;
 }
 
 interface ControlTableProps {
@@ -55,8 +50,6 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
       trip: "",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       oldTrip: "",
-      km: "",
-      fleet: "",
       preBox: "",
       boxInside: "",
       quantity: 0,
@@ -64,9 +57,7 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
       cargoType: "Distribuição",
       region: "",
       status: "",
-      exchange: "",
       manifestDate: new Date().toLocaleDateString(),
-      scheduled: "",
     };
     
     const updatedEntries = [...entries, newEntry];
@@ -95,6 +86,12 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
       return entryValue.includes(filterValue.toLowerCase());
     });
   });
+
+  const statusOptions = [
+    "1° TURNO OK",
+    "2° TURNO OK",
+    "3° TURNO OK"
+  ];
 
   return (
     <Card className="border rounded-lg bg-white shadow-sm">
@@ -128,8 +125,6 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
                 <TableHead>Viagem</TableHead>
                 <TableHead>Horas</TableHead>
                 <TableHead>Viagem Antiga</TableHead>
-                <TableHead>KM</TableHead>
-                <TableHead>Frota</TableHead>
                 <TableHead>Pré Box</TableHead>
                 <TableHead>Box Dentro</TableHead>
                 <TableHead>Quantidade</TableHead>
@@ -137,9 +132,7 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
                 <TableHead>Tipo de Carga</TableHead>
                 <TableHead>Região</TableHead>
                 <TableHead>Situação</TableHead>
-                <TableHead>Troca</TableHead>
                 <TableHead>Data Prev. Manifesto</TableHead>
-                <TableHead>Agendada</TableHead>
               </TableRow>
               {showFilter && (
                 <TableRow>
@@ -158,7 +151,7 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
                         />
                       </TableHead>
                     )) :
-                    Array(16).fill(0).map((_, i) => (
+                    Array(13).fill(0).map((_, i) => (
                       <TableHead key={i}>
                         <input
                           type="text"
@@ -185,21 +178,41 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
                         <Trash size={16} />
                       </button>
                     </TableCell>
-                    {Object.entries(entry).map(([key, value]) => (
-                      <TableCell key={key}>
-                        <input
-                          type={typeof value === 'number' ? 'number' : 'text'}
-                          value={value}
-                          onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
-                        />
-                      </TableCell>
-                    ))}
+                    {Object.entries(entry).map(([key, value]) => {
+                      if (key === 'status') {
+                        return (
+                          <TableCell key={key}>
+                            <select
+                              value={value}
+                              onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                              className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                            >
+                              <option value="">Selecione</option>
+                              {statusOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </TableCell>
+                        );
+                      }
+                      return (
+                        <TableCell key={key}>
+                          <input
+                            type={typeof value === 'number' ? 'number' : 'text'}
+                            value={value}
+                            onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                            className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                          />
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={17} className="text-center py-4 text-gray-500">
+                  <TableCell colSpan={13} className="text-center py-4 text-gray-500">
                     Nenhum registro encontrado. Adicione uma nova linha para começar.
                   </TableCell>
                 </TableRow>
