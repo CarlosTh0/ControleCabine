@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash, Filter } from 'lucide-react';
 import {
@@ -43,6 +44,11 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<Partial<Record<keyof ControlEntry, string>>>({});
 
+  // Update parent component when entries change
+  useEffect(() => {
+    onEntryChange?.(entries);
+  }, [entries, onEntryChange]);
+
   const handleAddEntry = () => {
     const newEntry: ControlEntry = {
       date: new Date().toLocaleDateString(),
@@ -65,20 +71,21 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
     
     const updatedEntries = [...entries, newEntry];
     setEntries(updatedEntries);
-    onEntryChange?.(updatedEntries);
   };
 
   const handleDeleteEntry = (index: number) => {
     const updatedEntries = entries.filter((_, i) => i !== index);
     setEntries(updatedEntries);
-    onEntryChange?.(updatedEntries);
   };
 
   const handleEntryChange = (index: number, field: keyof ControlEntry, value: any) => {
     const updatedEntries = [...entries];
     updatedEntries[index] = { ...updatedEntries[index], [field]: value };
     setEntries(updatedEntries);
-    onEntryChange?.(updatedEntries);
+  };
+
+  const handleFilterChange = (key: keyof ControlEntry, value: string) => {
+    setFilters({ ...filters, [key]: value });
   };
 
   const filteredEntries = entries.filter(entry => {
@@ -137,46 +144,66 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
               {showFilter && (
                 <TableRow>
                   <TableHead></TableHead>
-                  {Object.keys(entries[0] || {}).map((key) => (
-                    <TableHead key={key}>
-                      <input
-                        type="text"
-                        placeholder={`Filtrar ${key}...`}
-                        className="w-full p-1 text-xs border rounded"
-                        value={filters[key as keyof ControlEntry] || ''}
-                        onChange={(e) => {
-                          handleFilterChange(key as keyof ControlEntry, e.target.value)
-                        }}
-                      />
-                    </TableHead>
-                  ))}
+                  {Object.keys(filters).length > 0 || entries.length > 0 ? 
+                    Object.keys(entries[0] || {}).map((key) => (
+                      <TableHead key={key}>
+                        <input
+                          type="text"
+                          placeholder={`Filtrar ${key}...`}
+                          className="w-full p-1 text-xs border rounded"
+                          value={filters[key as keyof ControlEntry] || ''}
+                          onChange={(e) => {
+                            handleFilterChange(key as keyof ControlEntry, e.target.value)
+                          }}
+                        />
+                      </TableHead>
+                    )) :
+                    Array(16).fill(0).map((_, i) => (
+                      <TableHead key={i}>
+                        <input
+                          type="text"
+                          placeholder="Filtrar..."
+                          className="w-full p-1 text-xs border rounded"
+                          disabled
+                        />
+                      </TableHead>
+                    ))
+                  }
                 </TableRow>
               )}
             </TableHeader>
             <TableBody>
-              {filteredEntries.map((entry, index) => (
-                <TableRow key={index} className="group">
-                  <TableCell>
-                    <button
-                      onClick={() => handleDeleteEntry(index)}
-                      className="invisible group-hover:visible text-red-500 hover:text-red-700"
-                      title="Excluir linha"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </TableCell>
-                  {Object.entries(entry).map(([key, value]) => (
-                    <TableCell key={key}>
-                      <input
-                        type={typeof value === 'number' ? 'number' : 'text'}
-                        value={value}
-                        onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
-                        className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
-                      />
+              {filteredEntries.length > 0 ? (
+                filteredEntries.map((entry, index) => (
+                  <TableRow key={index} className="group">
+                    <TableCell>
+                      <button
+                        onClick={() => handleDeleteEntry(index)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Excluir linha"
+                      >
+                        <Trash size={16} />
+                      </button>
                     </TableCell>
-                  ))}
+                    {Object.entries(entry).map(([key, value]) => (
+                      <TableCell key={key}>
+                        <input
+                          type={typeof value === 'number' ? 'number' : 'text'}
+                          value={value}
+                          onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                          className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={17} className="text-center py-4 text-gray-500">
+                    Nenhum registro encontrado. Adicione uma nova linha para começar.
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

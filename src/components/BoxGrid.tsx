@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
   Plus, 
@@ -16,12 +16,35 @@ import {
 
 type BoxStatus = 'blocked' | 'free' | 'occupied';
 
+interface ControlEntry {
+  date: string;
+  trip: string;
+  time: string;
+  oldTrip: string;
+  km: string;
+  fleet: string;
+  preBox: string;
+  boxInside: string;
+  quantity: number;
+  shift: number;
+  cargoType: string;
+  region: string;
+  status: string;
+  exchange: string;
+  manifestDate: string;
+  scheduled: string;
+}
+
 interface BoxProps {
   number: string;
   value: string;
   status: BoxStatus;
   onStatusChange: (newStatus: BoxStatus) => void;
   onDelete: () => void;
+}
+
+interface BoxGridProps {
+  tableEntries: ControlEntry[];
 }
 
 const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
@@ -76,7 +99,7 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
   );
 };
 
-const BoxGrid = () => {
+const BoxGrid = ({ tableEntries }: BoxGridProps) => {
   // Generate box numbers according to specification: 50-56 and 300-356
   const generateBoxNumbers = () => {
     const boxes = [];
@@ -104,19 +127,7 @@ const BoxGrid = () => {
   };
 
   const initialBoxData = generateBoxNumbers().map(number => {
-    // Sample data - in a real app this would come from a database
-    const randomStatus = Math.random();
-    let status: BoxStatus = 'free';
-    let value = '';
-    
-    if (randomStatus < 0.3) {
-      status = 'occupied';
-      value = (520000 + Math.floor(Math.random() * 1500)).toString();
-    } else if (randomStatus < 0.4) {
-      status = 'blocked';
-    }
-    
-    return { number, value, status };
+    return { number, value: '', status: 'free' as BoxStatus };
   });
 
   const [boxData, setBoxData] = useState(initialBoxData);
@@ -124,6 +135,43 @@ const BoxGrid = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [filterValue, setFilterValue] = useState('');
   
+  // Update box data based on table entries
+  useEffect(() => {
+    if (!tableEntries || tableEntries.length === 0) return;
+    
+    const newBoxData = [...boxData];
+    const boxMap = new Map();
+    
+    // Reset all boxes to default state first
+    newBoxData.forEach(box => {
+      if (box.status !== 'blocked') {
+        box.value = '';
+        box.status = 'free';
+      }
+    });
+    
+    // Then update with table data
+    tableEntries.forEach(entry => {
+      if (entry.preBox) {
+        // Check for duplicate values (same trip in multiple boxes)
+        if (entry.trip && boxMap.has(entry.trip)) {
+          setShowDuplicateWarning(true);
+        } else if (entry.trip) {
+          boxMap.set(entry.trip, entry.preBox);
+        }
+        
+        // Find and update the box
+        const boxIndex = newBoxData.findIndex(box => box.number === entry.preBox);
+        if (boxIndex !== -1 && newBoxData[boxIndex].status !== 'blocked') {
+          newBoxData[boxIndex].value = entry.trip;
+          newBoxData[boxIndex].status = entry.trip ? 'occupied' : 'free';
+        }
+      }
+    });
+    
+    setBoxData(newBoxData);
+  }, [tableEntries]);
+
   // Check for duplicate values
   React.useEffect(() => {
     const occupiedBoxes = boxData.filter(box => box.status === 'occupied' && box.value);
@@ -217,7 +265,7 @@ const BoxGrid = () => {
           </Alert>
         )}
 
-        <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-16 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-16 gap-3">
           {filteredBoxData.map((box, index) => (
             <Box
               key={`${box.number}-${index}`}

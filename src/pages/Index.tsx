@@ -27,9 +27,6 @@ const Index = () => {
 
   const handleTableEntriesChange = (entries: ControlEntry[]) => {
     setTableEntries(entries);
-    // Update BoxGrid based on table entries
-    // The BoxGrid component will receive this data through its props
-    // and update the boxes accordingly
   };
 
   return (
