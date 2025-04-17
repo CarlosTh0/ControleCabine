@@ -1,7 +1,8 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BoxGrid from "@/components/BoxGrid";
 import ControlTable from "@/components/ControlTable";
+import { Toaster } from "@/components/ui/toaster";
 
 interface ControlEntry {
   date: string;
@@ -21,6 +22,18 @@ interface ControlEntry {
 const Index = () => {
   const [tableEntries, setTableEntries] = useState<ControlEntry[]>([]);
 
+  // Carregar dados salvos do localStorage quando o componente é montado
+  useEffect(() => {
+    const savedEntries = localStorage.getItem('tableEntries');
+    if (savedEntries) {
+      try {
+        setTableEntries(JSON.parse(savedEntries));
+      } catch (e) {
+        console.error('Erro ao carregar dados salvos:', e);
+      }
+    }
+  }, []);
+
   const handleTableEntriesChange = (entries: ControlEntry[]) => {
     setTableEntries(entries);
   };
@@ -33,9 +46,9 @@ const Index = () => {
         onEntryChange={handleTableEntriesChange} 
         tableTitle="Controle de Viagem"
       />
+      <Toaster />
     </div>
   );
 };
 
 export default Index;
-

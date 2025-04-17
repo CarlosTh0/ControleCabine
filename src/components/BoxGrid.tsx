@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
   Plus, 
   Trash, 
-  Filter
+  Filter,
+  Download,
+  Save
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
@@ -12,6 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 type BoxStatus = 'blocked' | 'free' | 'occupied';
 
@@ -60,6 +70,17 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
     return value;
   };
 
+  const getStatusText = () => {
+    switch (status) {
+      case 'blocked':
+        return 'Box bloqueado';
+      case 'free':
+        return 'Box livre para uso';
+      case 'occupied':
+        return `Box ocupado com a viagem ${value}`;
+    }
+  };
+
   const handleClick = () => {
     // Cycle through statuses: occupied -> free -> blocked -> occupied
     const nextStatus: Record<BoxStatus, BoxStatus> = {
@@ -72,15 +93,24 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
 
   return (
     <div className="group relative">
-      <div 
-        className={`w-[120px] h-[100px] rounded-[20px] ${getBackgroundColor()} 
-                   shadow-[rgba(50,50,93,0.25)_0px_30px_50px_-12px_inset,rgba(0,0,0,0.3)_0px_18px_26px_-18px_inset] 
-                   transition-colors cursor-pointer p-4 flex flex-col justify-between`}
-        onClick={handleClick}
-      >
-        <div className="text-sm font-semibold text-gray-600">{number}</div>
-        <div className="text-base font-medium text-center">{displayValue()}</div>
-      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              className={`w-[100px] h-[80px] rounded-[20px] ${getBackgroundColor()} 
+                        shadow-[rgba(50,50,93,0.25)_0px_30px_50px_-12px_inset,rgba(0,0,0,0.3)_0px_18px_26px_-18px_inset] 
+                        transition-colors cursor-pointer p-3 flex flex-col justify-between`}
+              onClick={handleClick}
+            >
+              <div className="text-xs font-semibold text-gray-600">{number}</div>
+              <div className="text-sm font-medium text-center truncate">{displayValue()}</div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{getStatusText()}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <button 
         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hidden group-hover:block"
         onClick={(e) => {
@@ -95,6 +125,7 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
 };
 
 const BoxGrid = ({ tableEntries }: BoxGridProps) => {
+  const { toast } = useToast();
   // Generate box numbers according to specification: 50-56 and 300-356
   const generateBoxNumbers = () => {
     const boxes = [];
@@ -121,14 +152,36 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     return boxes;
   };
 
-  const initialBoxData = generateBoxNumbers().map(number => {
-    return { number, value: '', status: 'free' as BoxStatus };
-  });
+  // Load box data from local storage or initialize
+  const loadBoxDataFromStorage = () => {
+    try {
+      const savedData = localStorage.getItem('boxData');
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    }
+    
+    // Default initialization if no storage data
+    return generateBoxNumbers().map(number => {
+      return { number, value: '', status: 'free' as BoxStatus };
+    });
+  };
 
-  const [boxData, setBoxData] = useState(initialBoxData);
+  const [boxData, setBoxData] = useState(loadBoxDataFromStorage());
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterValue, setFilterValue] = useState('');
+  
+  // Save box data to local storage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('boxData', JSON.stringify(boxData));
+    } catch (error) {
+      console.error('Erro ao salvar dados:', error);
+    }
+  }, [boxData]);
   
   // Update box data based on table entries
   useEffect(() => {
@@ -188,31 +241,69 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     const newBoxData = [...boxData];
     newBoxData[index].status = newStatus;
     setBoxData(newBoxData);
+    
+    toast({
+      title: "Status atualizado",
+      description: `Box ${newBoxData[index].number} está agora ${newStatus === 'blocked' ? 'bloqueado' : newStatus === 'free' ? 'livre' : 'ocupado'}.`,
+      duration: 2000,
+    });
   };
 
   const handleDeleteBox = (index: number) => {
     const newBoxData = [...boxData];
+    const boxNumber = newBoxData[index].number;
     newBoxData.splice(index, 1);
     setBoxData(newBoxData);
+    
+    toast({
+      title: "Box removido",
+      description: `Box ${boxNumber} foi removido com sucesso.`,
+      duration: 2000,
+    });
   };
 
   const handleAddBox = () => {
-    const newBoxNumber = prompt("Enter new box number:");
+    const newBoxNumber = prompt("Digite o número do novo box:");
     if (!newBoxNumber) return;
     
     // Check if the box number already exists
     if (boxData.some(box => box.number === newBoxNumber)) {
-      alert("This box number already exists!");
+      toast({
+        title: "Erro ao adicionar",
+        description: "Este número de box já existe!",
+        variant: "destructive",
+      });
       return;
     }
     
     setBoxData([...boxData, { number: newBoxNumber, value: '', status: 'free' }]);
+    
+    toast({
+      title: "Box adicionado",
+      description: `Box ${newBoxNumber} foi adicionado com sucesso.`,
+    });
+  };
+  
+  const handleSaveBoxState = () => {
+    try {
+      localStorage.setItem('boxData', JSON.stringify(boxData));
+      toast({
+        title: "Estado salvo",
+        description: "Estado atual dos boxes foi salvo com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o estado dos boxes.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredBoxData = filterValue 
     ? boxData.filter(box => 
-        box.number.includes(filterValue) || 
-        box.value.includes(filterValue))
+        box.number.toLowerCase().includes(filterValue.toLowerCase()) || 
+        box.value.toLowerCase().includes(filterValue.toLowerCase()))
     : boxData;
 
   return (
@@ -220,20 +311,53 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-semibold">Controle de Pré-Box</CardTitle>
         <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setShowFilter(!showFilter)}
-            className="p-2 hover:bg-gray-100 rounded-full"
-            title="Filter boxes"
-          >
-            <Filter size={18} />
-          </button>
-          <button 
-            onClick={handleAddBox}
-            className="p-2 hover:bg-gray-100 rounded-full"
-            title="Add new box"
-          >
-            <Plus size={18} />
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setShowFilter(!showFilter)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Filter size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Filtrar boxes</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={handleAddBox}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Plus size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Adicionar novo box</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={handleSaveBoxState}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <Save size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Salvar estado atual</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardHeader>
 
@@ -242,7 +366,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
           <div className="mb-4 p-2 bg-gray-50 rounded-md">
             <input
               type="text"
-              placeholder="Filter by box number or value..."
+              placeholder="Filtrar por número ou valor do box..."
               className="w-full p-2 border rounded-md"
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
@@ -260,7 +384,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
           </Alert>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-16 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
           {filteredBoxData.map((box, index) => (
             <Box
               key={`${box.number}-${index}`}
