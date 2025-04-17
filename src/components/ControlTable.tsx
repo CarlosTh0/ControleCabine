@@ -63,7 +63,7 @@ const ControlTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof ControlEntry | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const itemsPerPage = 5;
+  const itemsPerPage = 5; // Definindo exatamente 5 linhas conforme solicitado
 
   // Carregar dados do localStorage ao inicializar
   useEffect(() => {
@@ -73,7 +73,7 @@ const ControlTable = ({
         const parsedEntries = JSON.parse(savedEntries);
         setEntries(parsedEntries);
       } catch (e) {
-        console.error('Erro ao carregar dados da tabela:', e);
+        console.error('ERRO AO CARREGAR DADOS DA TABELA:', e);
       }
     }
   }, []);
@@ -190,6 +190,12 @@ const ControlTable = ({
   
   const paginatedEntries = sortedEntries.slice(getStartIndex(), getEndIndex());
 
+  // Preencher com linhas vazias para garantir 5 linhas
+  const filledEntries = [...paginatedEntries];
+  while (filledEntries.length < itemsPerPage) {
+    filledEntries.push({} as ControlEntry);
+  }
+
   const statusOptions = [
     "1° TURNO OK",
     "2° TURNO OK",
@@ -219,7 +225,7 @@ const ControlTable = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `controle_viagem_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `CONTROLE_VIAGEM_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -276,8 +282,15 @@ const ControlTable = ({
 
   const columnHeaders = getColumnHeaders();
 
+  // Reorganizar colunas: mover ações para depois de manifestDate
+  const columnOrder: (keyof ControlEntry)[] = [
+    'date', 'trip', 'time', 'oldTrip', 'preBox', 
+    'boxInside', 'quantity', 'shift', 'cargoType', 
+    'region', 'status', 'manifestDate'
+  ];
+
   return (
-    <Card className="border rounded-lg bg-white shadow-sm">
+    <Card className="border rounded-lg bg-white shadow-sm w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-semibold uppercase">{tableTitle}</CardTitle>
         <div className="flex items-center space-x-2">
@@ -350,35 +363,36 @@ const ControlTable = ({
 
       <CardContent>
         <div className="overflow-x-auto" style={{ minWidth: "100%" }}>
-          <Table>
+          <Table className="min-w-max w-full table-fixed">
             <TableHeader>
               <TableRow>
-                {/* Reorganizar colunas: colocar a coluna de ações por último */}
-                {Object.entries(columnHeaders).map(([key, label]) => (
+                {/* Reorganizar colunas conforme a ordem definida */}
+                {columnOrder.map((key) => (
                   <TableHead 
                     key={key} 
-                    className="cursor-pointer hover:bg-gray-50 whitespace-nowrap font-bold"
-                    onClick={() => handleSort(key as keyof ControlEntry)}
+                    className="cursor-pointer hover:bg-gray-50 whitespace-nowrap font-bold uppercase"
+                    onClick={() => handleSort(key)}
+                    style={{ minWidth: "150px" }}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>{label}</span>
-                      {getSortIcon(key as keyof ControlEntry)}
+                      <span>{columnHeaders[key]}</span>
+                      {getSortIcon(key)}
                     </div>
                   </TableHead>
                 ))}
-                <TableHead>AÇÕES</TableHead>
+                <TableHead className="uppercase font-bold" style={{ minWidth: "100px" }}>AÇÕES</TableHead>
               </TableRow>
               {showFilter && (
                 <TableRow>
-                  {Object.keys(columnHeaders).map((key) => (
+                  {columnOrder.map((key) => (
                     <TableHead key={key}>
                       <input
                         type="text"
                         placeholder={`FILTRAR ${columnHeaders[key]}...`}
-                        className="w-full p-1 text-xs border rounded"
-                        value={filters[key as keyof ControlEntry] || ''}
+                        className="w-full p-1 text-xs border rounded uppercase"
+                        value={filters[key] || ''}
                         onChange={(e) => {
-                          handleFilterChange(key as keyof ControlEntry, e.target.value)
+                          handleFilterChange(key, e.target.value)
                         }}
                       />
                     </TableHead>
@@ -388,16 +402,29 @@ const ControlTable = ({
               )}
             </TableHeader>
             <TableBody>
-              {paginatedEntries.length > 0 ? (
-                paginatedEntries.map((entry, index) => (
+              {filledEntries.map((entry, index) => {
+                const isEmpty = !Object.keys(entry).length;
+                
+                if (isEmpty) {
+                  return (
+                    <TableRow key={`empty-${index}`} className="group h-12">
+                      {columnOrder.map(key => (
+                        <TableCell key={`empty-${key}-${index}`} className="whitespace-nowrap"></TableCell>
+                      ))}
+                      <TableCell></TableCell>
+                    </TableRow>
+                  );
+                }
+                
+                return (
                   <TableRow key={index} className="group">
-                    {Object.entries(entry).map(([key, value]) => {
+                    {columnOrder.map((key) => {
                       if (key === 'status') {
                         return (
                           <TableCell key={key} className="whitespace-nowrap">
                             <select
-                              value={value}
-                              onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                              value={entry[key] || ''}
+                              onChange={(e) => handleEntryChange(index, key, e.target.value)}
                               className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 uppercase"
                             >
                               <option value="">SELECIONE</option>
@@ -413,9 +440,9 @@ const ControlTable = ({
                       return (
                         <TableCell key={key} className="whitespace-nowrap">
                           <input
-                            type={typeof value === 'number' ? 'number' : 'text'}
-                            value={typeof value === 'string' ? toUpperCase(value) : value}
-                            onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                            type={typeof entry[key] === 'number' ? 'number' : 'text'}
+                            value={typeof entry[key] === 'string' ? toUpperCase(entry[key] as string) : entry[key] || ''}
+                            onChange={(e) => handleEntryChange(index, key, e.target.value)}
                             className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 uppercase"
                             style={{ minWidth: '100px' }}
                           />
@@ -440,14 +467,8 @@ const ControlTable = ({
                       </TooltipProvider>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={Object.keys(columnHeaders).length + 1} className="text-center py-4 text-gray-500 uppercase">
-                    NENHUM REGISTRO ENCONTRADO. ADICIONE UMA NOVA LINHA PARA COMEÇAR.
-                  </TableCell>
-                </TableRow>
-              )}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

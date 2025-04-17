@@ -29,7 +29,7 @@ const Index = () => {
       try {
         setTableEntries(JSON.parse(savedEntries));
       } catch (e) {
-        console.error('Erro ao carregar dados salvos:', e);
+        console.error('ERRO AO CARREGAR DADOS SALVOS:', e);
       }
     }
   }, []);
@@ -47,10 +47,13 @@ const Index = () => {
         <BoxGrid tableEntries={tableEntries} />
       </div>
       
-      <ControlTable 
-        onEntryChange={handleTableEntriesChange} 
-        tableTitle="CONTROLE DE VIAGEM"
-      />
+      {/* Tabela de Controle de Viagem com espaço extra abaixo */}
+      <div className="mb-16">
+        <ControlTable 
+          onEntryChange={handleTableEntriesChange} 
+          tableTitle="CONTROLE DE VIAGEM"
+        />
+      </div>
       <Toaster />
     </div>
   );
