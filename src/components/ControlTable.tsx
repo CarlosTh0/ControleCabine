@@ -32,9 +32,13 @@ interface ControlEntry {
 
 interface ControlTableProps {
   onEntryChange?: (entries: ControlEntry[]) => void;
+  tableTitle?: string;
 }
 
-const ControlTable = ({ onEntryChange }: ControlTableProps) => {
+const ControlTable = ({ 
+  onEntryChange, 
+  tableTitle = "Controle de Pré-Box" 
+}: ControlTableProps) => {
   const [entries, setEntries] = useState<ControlEntry[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<Partial<Record<keyof ControlEntry, string>>>({});
@@ -96,7 +100,7 @@ const ControlTable = ({ onEntryChange }: ControlTableProps) => {
   return (
     <Card className="border rounded-lg bg-white shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold">Controle de Pré-Box</CardTitle>
+        <CardTitle className="text-xl font-semibold">{tableTitle}</CardTitle>
         <div className="flex items-center space-x-2">
           <button 
             onClick={() => setShowFilter(!showFilter)}
