@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
@@ -21,8 +20,6 @@ interface ControlEntry {
   trip: string;
   time: string;
   oldTrip: string;
-  km: string;
-  fleet: string;
   preBox: string;
   boxInside: string;
   quantity: number;
@@ -30,9 +27,7 @@ interface ControlEntry {
   cargoType: string;
   region: string;
   status: string;
-  exchange: string;
   manifestDate: string;
-  scheduled: string;
 }
 
 interface BoxProps {
