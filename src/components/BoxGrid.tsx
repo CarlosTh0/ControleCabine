@@ -6,7 +6,9 @@ import {
   Trash, 
   Filter,
   Download,
-  Save
+  Save,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
@@ -66,18 +68,18 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
 
   const displayValue = () => {
     if (status === 'blocked') return 'BLOQUEADO';
-    if (status === 'free') return '*Livre*';
-    return value;
+    if (status === 'free') return '*LIVRE*';
+    return value.toUpperCase();
   };
 
   const getStatusText = () => {
     switch (status) {
       case 'blocked':
-        return 'Box bloqueado';
+        return 'BOX BLOQUEADO';
       case 'free':
-        return 'Box livre para uso';
+        return 'BOX LIVRE PARA USO';
       case 'occupied':
-        return `Box ocupado com a viagem ${value}`;
+        return `BOX OCUPADO COM A VIAGEM ${value.toUpperCase()}`;
     }
   };
 
@@ -102,12 +104,12 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
                         transition-colors cursor-pointer p-3 flex flex-col justify-between`}
               onClick={handleClick}
             >
-              <div className="text-xs font-semibold text-gray-600">{number}</div>
-              <div className="text-sm font-medium text-center truncate">{displayValue()}</div>
+              <div className="text-xs font-semibold text-gray-600 uppercase">{number}</div>
+              <div className="text-sm font-medium text-center truncate uppercase">{displayValue()}</div>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{getStatusText()}</p>
+            <p className="uppercase">{getStatusText()}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -173,6 +175,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterValue, setFilterValue] = useState('');
+  const [editMode, setEditMode] = useState(false);
   
   // Save box data to local storage when it changes
   useEffect(() => {
@@ -209,7 +212,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
         }
         
         // Find and update the box
-        const boxIndex = newBoxData.findIndex(box => box.number === entry.preBox);
+        const boxIndex = newBoxData.findIndex(box => box.number.toLowerCase() === entry.preBox.toLowerCase());
         if (boxIndex !== -1 && newBoxData[boxIndex].status !== 'blocked') {
           newBoxData[boxIndex].value = entry.trip;
           newBoxData[boxIndex].status = entry.trip ? 'occupied' : 'free';
@@ -243,8 +246,8 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     setBoxData(newBoxData);
     
     toast({
-      title: "Status atualizado",
-      description: `Box ${newBoxData[index].number} está agora ${newStatus === 'blocked' ? 'bloqueado' : newStatus === 'free' ? 'livre' : 'ocupado'}.`,
+      title: "STATUS ATUALIZADO",
+      description: `BOX ${newBoxData[index].number} ESTÁ AGORA ${newStatus === 'blocked' ? 'BLOQUEADO' : newStatus === 'free' ? 'LIVRE' : 'OCUPADO'}.`,
       duration: 2000,
     });
   };
@@ -256,31 +259,31 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     setBoxData(newBoxData);
     
     toast({
-      title: "Box removido",
-      description: `Box ${boxNumber} foi removido com sucesso.`,
+      title: "BOX REMOVIDO",
+      description: `BOX ${boxNumber} FOI REMOVIDO COM SUCESSO.`,
       duration: 2000,
     });
   };
 
   const handleAddBox = () => {
-    const newBoxNumber = prompt("Digite o número do novo box:");
+    const newBoxNumber = prompt("DIGITE O NÚMERO DO NOVO BOX:");
     if (!newBoxNumber) return;
     
     // Check if the box number already exists
-    if (boxData.some(box => box.number === newBoxNumber)) {
+    if (boxData.some(box => box.number.toLowerCase() === newBoxNumber.toLowerCase())) {
       toast({
-        title: "Erro ao adicionar",
-        description: "Este número de box já existe!",
+        title: "ERRO AO ADICIONAR",
+        description: "ESTE NÚMERO DE BOX JÁ EXISTE!",
         variant: "destructive",
       });
       return;
     }
     
-    setBoxData([...boxData, { number: newBoxNumber, value: '', status: 'free' }]);
+    setBoxData([...boxData, { number: newBoxNumber.toUpperCase(), value: '', status: 'free' }]);
     
     toast({
-      title: "Box adicionado",
-      description: `Box ${newBoxNumber} foi adicionado com sucesso.`,
+      title: "BOX ADICIONADO",
+      description: `BOX ${newBoxNumber.toUpperCase()} FOI ADICIONADO COM SUCESSO.`,
     });
   };
   
@@ -288,16 +291,24 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     try {
       localStorage.setItem('boxData', JSON.stringify(boxData));
       toast({
-        title: "Estado salvo",
-        description: "Estado atual dos boxes foi salvo com sucesso.",
+        title: "ESTADO SALVO",
+        description: "ESTADO ATUAL DOS BOXES FOI SALVO COM SUCESSO.",
       });
     } catch (error) {
       toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar o estado dos boxes.",
+        title: "ERRO AO SALVAR",
+        description: "NÃO FOI POSSÍVEL SALVAR O ESTADO DOS BOXES.",
         variant: "destructive",
       });
     }
+  };
+
+  const toggleEditMode = () => {
+    setEditMode(!editMode);
+    toast({
+      title: editMode ? "MODO EDIÇÃO DESATIVADO" : "MODO EDIÇÃO ATIVADO",
+      description: editMode ? "SAINDO DO MODO DE EDIÇÃO DE PRÉ-BOX." : "AGORA VOCÊ PODE EDITAR OS PRÉ-BOXES.",
+    });
   };
 
   const filteredBoxData = filterValue 
@@ -309,7 +320,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
   return (
     <Card className="border rounded-lg bg-white shadow-sm mb-8">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold">Controle de Pré-Box</CardTitle>
+        <CardTitle className="text-xl font-semibold uppercase">CONTROLE DE PRÉ-BOX</CardTitle>
         <div className="flex items-center space-x-2">
           <TooltipProvider>
             <Tooltip>
@@ -322,26 +333,64 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Filtrar boxes</p>
+                <p>FILTRAR BOXES</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
+          {/* Novo botão para alternar modo de edição */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={handleAddBox}
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  onClick={toggleEditMode}
+                  className={`p-2 hover:bg-gray-100 rounded-full ${editMode ? 'bg-blue-100' : ''}`}
                 >
-                  <Plus size={18} />
+                  <Edit size={18} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Adicionar novo box</p>
+                <p>{editMode ? "DESATIVAR EDIÇÃO" : "ATIVAR EDIÇÃO"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          
+          {/* Botão para adicionar box - agora só aparece no modo de edição */}
+          {editMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={handleAddBox}
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>ADICIONAR NOVO BOX</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {/* Botão para remover boxes - agora só aparece no modo de edição */}
+          {editMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="p-2 hover:bg-gray-100 rounded-full text-red-500"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>REMOVER BOXES (CLIQUE NOS BOXES PARA REMOVER)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           
           <TooltipProvider>
             <Tooltip>
@@ -354,7 +403,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Salvar estado atual</p>
+                <p>SALVAR ESTADO ATUAL</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -366,8 +415,8 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
           <div className="mb-4 p-2 bg-gray-50 rounded-md">
             <input
               type="text"
-              placeholder="Filtrar por número ou valor do box..."
-              className="w-full p-2 border rounded-md"
+              placeholder="FILTRAR POR NÚMERO OU VALOR DO BOX..."
+              className="w-full p-2 border rounded-md uppercase"
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
             />
@@ -377,9 +426,9 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
         {showDuplicateWarning && (
           <Alert variant="destructive" className="mb-4">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Atenção!</AlertTitle>
-            <AlertDescription>
-              Existe uma viagem vinculada a mais de um PRÉ-BOX. Verifique os dados.
+            <AlertTitle className="uppercase">ATENÇÃO!</AlertTitle>
+            <AlertDescription className="uppercase">
+              EXISTE UMA VIAGEM VINCULADA A MAIS DE UM PRÉ-BOX. VERIFIQUE OS DADOS.
             </AlertDescription>
           </Alert>
         )}

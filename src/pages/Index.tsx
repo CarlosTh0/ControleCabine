@@ -40,11 +40,16 @@ const Index = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-center">Sistema de Controle de Pré-Box</h1>
-      <BoxGrid tableEntries={tableEntries} />
+      <h1 className="text-3xl font-bold mb-8 text-center uppercase">SISTEMA DE CONTROLE DE PRÉ-BOX</h1>
+      
+      {/* BoxGrid em um container com posição sticky */}
+      <div className="sticky top-4 z-10 mb-8">
+        <BoxGrid tableEntries={tableEntries} />
+      </div>
+      
       <ControlTable 
         onEntryChange={handleTableEntriesChange} 
-        tableTitle="Controle de Viagem"
+        tableTitle="CONTROLE DE VIAGEM"
       />
       <Toaster />
     </div>

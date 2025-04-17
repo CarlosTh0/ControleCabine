@@ -54,7 +54,7 @@ interface ControlTableProps {
 
 const ControlTable = ({ 
   onEntryChange, 
-  tableTitle = "Controle de Viagem" 
+  tableTitle = "CONTROLE DE VIAGEM" 
 }: ControlTableProps) => {
   const { toast } = useToast();
   const [entries, setEntries] = useState<ControlEntry[]>([]);
@@ -98,7 +98,7 @@ const ControlTable = ({
       boxInside: "",
       quantity: 0,
       shift: 1,
-      cargoType: "Distribuição",
+      cargoType: "DISTRIBUIÇÃO",
       region: "",
       status: "",
       manifestDate: new Date().toLocaleDateString(),
@@ -112,8 +112,8 @@ const ControlTable = ({
     setCurrentPage(lastPage);
     
     toast({
-      title: "Registro adicionado",
-      description: "Novo registro adicionado com sucesso.",
+      title: "REGISTRO ADICIONADO",
+      description: "NOVO REGISTRO ADICIONADO COM SUCESSO.",
     });
   };
 
@@ -129,8 +129,8 @@ const ControlTable = ({
     }
     
     toast({
-      title: "Registro removido",
-      description: "Registro removido com sucesso.",
+      title: "REGISTRO REMOVIDO",
+      description: "REGISTRO REMOVIDO COM SUCESSO.",
     });
   };
 
@@ -225,23 +225,61 @@ const ControlTable = ({
     document.body.removeChild(link);
     
     toast({
-      title: "Exportação concluída",
-      description: "Dados exportados com sucesso para CSV.",
+      title: "EXPORTAÇÃO CONCLUÍDA",
+      description: "DADOS EXPORTADOS COM SUCESSO PARA CSV.",
     });
   };
   
   const saveData = () => {
     localStorage.setItem('tableEntries', JSON.stringify(entries));
     toast({
-      title: "Dados salvos",
-      description: "Dados da tabela foram salvos localmente.",
+      title: "DADOS SALVOS",
+      description: "DADOS DA TABELA FORAM SALVOS LOCALMENTE.",
     });
   };
+
+  // Função para transformar texto para maiúsculas
+  const toUpperCase = (text: string) => {
+    return typeof text === 'string' ? text.toUpperCase() : text;
+  };
+
+  // Transformar os cabeçalhos de coluna para maiúsculas
+  const getColumnHeaders = () => {
+    if (entries.length === 0) {
+      return {
+        date: "DATA", trip: "VIAGEM", time: "HORA", oldTrip: "VIAGEM ANTERIOR", preBox: "PRÉ-BOX", 
+        boxInside: "BOX INTERNO", quantity: "QUANTIDADE", shift: "TURNO", cargoType: "TIPO DE CARGA", 
+        region: "REGIÃO", status: "STATUS", manifestDate: "DATA MANIFESTO"
+      };
+    }
+    
+    return Object.keys(entries[0]).reduce((acc, key) => {
+      const headerMap: Record<string, string> = {
+        date: "DATA",
+        trip: "VIAGEM",
+        time: "HORA",
+        oldTrip: "VIAGEM ANTERIOR",
+        preBox: "PRÉ-BOX",
+        boxInside: "BOX INTERNO",
+        quantity: "QUANTIDADE",
+        shift: "TURNO",
+        cargoType: "TIPO DE CARGA",
+        region: "REGIÃO",
+        status: "STATUS",
+        manifestDate: "DATA MANIFESTO"
+      };
+      
+      acc[key] = headerMap[key] || key.toUpperCase();
+      return acc;
+    }, {} as Record<string, string>);
+  };
+
+  const columnHeaders = getColumnHeaders();
 
   return (
     <Card className="border rounded-lg bg-white shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold">{tableTitle}</CardTitle>
+        <CardTitle className="text-xl font-semibold uppercase">{tableTitle}</CardTitle>
         <div className="flex items-center space-x-2">
           <TooltipProvider>
             <Tooltip>
@@ -254,7 +292,7 @@ const ControlTable = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Filtro avançado</p>
+                <p>FILTRO AVANÇADO</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -270,7 +308,7 @@ const ControlTable = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Adicionar nova linha</p>
+                <p>ADICIONAR NOVA LINHA</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -286,7 +324,7 @@ const ControlTable = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Salvar dados</p>
+                <p>SALVAR DADOS</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -303,7 +341,7 @@ const ControlTable = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Exportar para CSV</p>
+                <p>EXPORTAR PARA CSV</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -311,40 +349,32 @@ const ControlTable = ({
       </CardHeader>
 
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ minWidth: "100%" }}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ações</TableHead>
-                {Object.keys(entries[0] || {
-                  date: "", trip: "", time: "", oldTrip: "", preBox: "", 
-                  boxInside: "", quantity: 0, shift: 0, cargoType: "", 
-                  region: "", status: "", manifestDate: ""
-                }).map((key) => (
+                {/* Reorganizar colunas: colocar a coluna de ações por último */}
+                {Object.entries(columnHeaders).map(([key, label]) => (
                   <TableHead 
                     key={key} 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-gray-50 whitespace-nowrap font-bold"
                     onClick={() => handleSort(key as keyof ControlEntry)}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>{key}</span>
+                      <span>{label}</span>
                       {getSortIcon(key as keyof ControlEntry)}
                     </div>
                   </TableHead>
                 ))}
+                <TableHead>AÇÕES</TableHead>
               </TableRow>
               {showFilter && (
                 <TableRow>
-                  <TableHead></TableHead>
-                  {Object.keys(entries[0] || {
-                    date: "", trip: "", time: "", oldTrip: "", preBox: "", 
-                    boxInside: "", quantity: 0, shift: 0, cargoType: "", 
-                    region: "", status: "", manifestDate: ""
-                  }).map((key) => (
+                  {Object.keys(columnHeaders).map((key) => (
                     <TableHead key={key}>
                       <input
                         type="text"
-                        placeholder={`Filtrar ${key}...`}
+                        placeholder={`FILTRAR ${columnHeaders[key]}...`}
                         className="w-full p-1 text-xs border rounded"
                         value={filters[key as keyof ControlEntry] || ''}
                         onChange={(e) => {
@@ -353,6 +383,7 @@ const ControlTable = ({
                       />
                     </TableHead>
                   ))}
+                  <TableHead></TableHead>
                 </TableRow>
               )}
             </TableHeader>
@@ -360,6 +391,37 @@ const ControlTable = ({
               {paginatedEntries.length > 0 ? (
                 paginatedEntries.map((entry, index) => (
                   <TableRow key={index} className="group">
+                    {Object.entries(entry).map(([key, value]) => {
+                      if (key === 'status') {
+                        return (
+                          <TableCell key={key} className="whitespace-nowrap">
+                            <select
+                              value={value}
+                              onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                              className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 uppercase"
+                            >
+                              <option value="">SELECIONE</option>
+                              {statusOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </TableCell>
+                        );
+                      }
+                      return (
+                        <TableCell key={key} className="whitespace-nowrap">
+                          <input
+                            type={typeof value === 'number' ? 'number' : 'text'}
+                            value={typeof value === 'string' ? toUpperCase(value) : value}
+                            onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
+                            className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 uppercase"
+                            style={{ minWidth: '100px' }}
+                          />
+                        </TableCell>
+                      );
+                    })}
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
@@ -372,47 +434,17 @@ const ControlTable = ({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Excluir linha</p>
+                            <p>EXCLUIR LINHA</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    {Object.entries(entry).map(([key, value]) => {
-                      if (key === 'status') {
-                        return (
-                          <TableCell key={key}>
-                            <select
-                              value={value}
-                              onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
-                              className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
-                            >
-                              <option value="">Selecione</option>
-                              {statusOptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </TableCell>
-                        );
-                      }
-                      return (
-                        <TableCell key={key}>
-                          <input
-                            type={typeof value === 'number' ? 'number' : 'text'}
-                            value={value}
-                            onChange={(e) => handleEntryChange(index, key as keyof ControlEntry, e.target.value)}
-                            className="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2"
-                          />
-                        </TableCell>
-                      );
-                    })}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={Object.keys(entries[0] || {}).length + 1} className="text-center py-4 text-gray-500">
-                    Nenhum registro encontrado. Adicione uma nova linha para começar.
+                  <TableCell colSpan={Object.keys(columnHeaders).length + 1} className="text-center py-4 text-gray-500 uppercase">
+                    NENHUM REGISTRO ENCONTRADO. ADICIONE UMA NOVA LINHA PARA COMEÇAR.
                   </TableCell>
                 </TableRow>
               )}
