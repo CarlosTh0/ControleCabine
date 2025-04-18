@@ -400,7 +400,7 @@ const ControlTable = ({
                     <TableHead key={key}>
                       <input
                         type="text"
-                        placeholder={`FILTRAR ${columnHeaders[key]}...`}
+                        placeholder={`FILTRAR ${typeof columnHeaders[key] === 'string' ? columnHeaders[key] : key.toUpperCase()}...`}
                         className="w-full p-1 text-xs border rounded uppercase"
                         value={filters[key] || ''}
                         onChange={(e) => {

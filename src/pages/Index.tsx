@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import BoxGrid from "@/components/BoxGrid";
 import ControlTable from "@/components/ControlTable";
@@ -45,20 +46,29 @@ const Index = () => {
           SISTEMA DE CONTROLE DE PRÉ-BOX
         </h1>
         
-        <div className="grid gap-8">
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Controle de Pré-Box</h2>
-            <BoxGrid tableEntries={tableEntries} />
-          </div>
+        <Tabs defaultValue="prebox" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="prebox" className="flex items-center gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              Controle de Pré-Box
+            </TabsTrigger>
+            <TabsTrigger value="viagem" className="flex items-center gap-2">
+              <Table2 className="w-4 h-4" />
+              Controle de Viagem
+            </TabsTrigger>
+          </TabsList>
           
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Controle de Viagem</h2>
+          <TabsContent value="prebox" className="mb-8">
+            <BoxGrid tableEntries={tableEntries} />
+          </TabsContent>
+          
+          <TabsContent value="viagem" className="mb-16">
             <ControlTable 
               onEntryChange={handleTableEntriesChange} 
               tableTitle="CONTROLE DE VIAGEM"
             />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
         
         <Toaster />
       </div>
