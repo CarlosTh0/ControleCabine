@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
@@ -58,11 +57,11 @@ const Box = ({ number, value, status, onStatusChange, onDelete }: BoxProps) => {
   const getBackgroundColor = () => {
     switch (status) {
       case 'blocked':
-        return 'bg-red-500 text-white';
+        return 'bg-red-500 text-white dark:bg-red-600';
       case 'free':
-        return 'bg-green-50';
+        return 'bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-100';
       case 'occupied':
-        return 'bg-[#FEC6A1]';
+        return 'bg-[#FEC6A1] dark:bg-orange-900/30 dark:text-orange-100';
     }
   };
 
@@ -318,91 +317,91 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
     : boxData;
 
   return (
-    <Card className="border rounded-lg bg-white shadow-sm mb-8">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-semibold uppercase">CONTROLE DE PRÉ-BOX</CardTitle>
+    <Card className="border rounded-lg bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b dark:border-gray-800">
+        <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          CONTROLE DE PRÉ-BOX
+        </CardTitle>
         <div className="flex items-center space-x-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
                   onClick={() => setShowFilter(!showFilter)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 >
-                  <Filter size={18} />
+                  <Filter size={18} className="text-gray-600 dark:text-gray-400" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="bg-white dark:bg-gray-800">
                 <p>FILTRAR BOXES</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          
-          {/* Novo botão para alternar modo de edição */}
+
+          {/* Edit mode toggle */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
                   onClick={toggleEditMode}
-                  className={`p-2 hover:bg-gray-100 rounded-full ${editMode ? 'bg-blue-100' : ''}`}
+                  className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ${editMode ? 'bg-blue-100 dark:bg-blue-900/40' : ''}`}
                 >
-                  <Edit size={18} />
+                  <Edit size={18} className="text-gray-600 dark:text-gray-400" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="bg-white dark:bg-gray-800">
                 <p>{editMode ? "DESATIVAR EDIÇÃO" : "ATIVAR EDIÇÃO"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          
-          {/* Botão para adicionar box - agora só aparece no modo de edição */}
+
           {editMode && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={handleAddBox}
-                    className="p-2 hover:bg-gray-100 rounded-full"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>ADICIONAR NOVO BOX</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      onClick={handleAddBox}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    >
+                      <Plus size={18} className="text-gray-600 dark:text-gray-400" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white dark:bg-gray-800">
+                    <p>ADICIONAR NOVO BOX</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-red-500 dark:text-red-400"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white dark:bg-gray-800">
+                    <p>REMOVER BOXES (CLIQUE NOS BOXES PARA REMOVER)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
           )}
-          
-          {/* Botão para remover boxes - agora só aparece no modo de edição */}
-          {editMode && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    className="p-2 hover:bg-gray-100 rounded-full text-red-500"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>REMOVER BOXES (CLIQUE NOS BOXES PARA REMOVER)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
                   onClick={handleSaveBoxState}
-                  className="p-2 hover:bg-gray-100 rounded-full"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 >
-                  <Save size={18} />
+                  <Save size={18} className="text-gray-600 dark:text-gray-400" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="bg-white dark:bg-gray-800">
                 <p>SALVAR ESTADO ATUAL</p>
               </TooltipContent>
             </Tooltip>
@@ -410,13 +409,13 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         {showFilter && (
-          <div className="mb-4 p-2 bg-gray-50 rounded-md">
+          <div className="mb-4">
             <input
               type="text"
               placeholder="FILTRAR POR NÚMERO OU VALOR DO BOX..."
-              className="w-full p-2 border rounded-md uppercase"
+              className="w-full p-2 border rounded-md bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 uppercase"
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
             />
@@ -433,7 +432,7 @@ const BoxGrid = ({ tableEntries }: BoxGridProps) => {
           </Alert>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-16 gap-4">
           {filteredBoxData.map((box, index) => (
             <Box
               key={`${box.number}-${index}`}
