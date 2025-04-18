@@ -44,8 +44,8 @@ const Index = () => {
           SISTEMA DE CONTROLE DE PRÉ-BOX
         </h1>
         
-        {/* BoxGrid em um container com posição sticky */}
-        <div className="sticky top-4 z-10 mb-8">
+        {/* BoxGrid container without sticky positioning */}
+        <div className="mb-8">
           <BoxGrid tableEntries={tableEntries} />
         </div>
         
