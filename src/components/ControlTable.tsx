@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash, Filter, Download, Save, ArrowUp, ArrowDown, FileDown } from 'lucide-react';
 import {
@@ -280,7 +279,20 @@ const ControlTable = ({
     }, {} as Record<string, string>);
   };
 
-  const columnHeaders = getColumnHeaders();
+  const columnHeaders = {
+    date: "DATA",
+    trip: "VIAGEM",
+    time: "HORA",
+    oldTrip: <div className="text-center">VIAGEM<br/>ANTERIOR</div>,
+    preBox: "PRÉ-BOX",
+    boxInside: "BOX-D",
+    quantity: "QUANTIDADE",
+    shift: "TURNO",
+    cargoType: <div className="text-center">TIPO DE<br/>CARGA</div>,
+    region: "REGIÃO",
+    status: "STATUS",
+    manifestDate: <div className="text-center">DATA<br/>SEGUINTE</div>
+  };
 
   // Reorganizar colunas: mover ações para depois de manifestDate
   const columnOrder: (keyof ControlEntry)[] = [
@@ -370,11 +382,11 @@ const ControlTable = ({
                 {columnOrder.map((key) => (
                   <TableHead 
                     key={key} 
-                    className="cursor-pointer hover:bg-gray-50 whitespace-nowrap font-bold uppercase"
+                    className="cursor-pointer hover:bg-gray-50 whitespace-normal text-center font-bold uppercase"
                     onClick={() => handleSort(key)}
                     style={{ minWidth: "150px" }}
                   >
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center justify-center space-x-1">
                       <span>{columnHeaders[key]}</span>
                       {getSortIcon(key)}
                     </div>
