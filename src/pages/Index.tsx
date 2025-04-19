@@ -3,173 +3,142 @@ import ControlTable from "@/components/ControlTable";
 import BoxGrid from "@/components/BoxGrid";
 import Dashboard from "@/components/Dashboard";
 import Sidebar from '@/components/Sidebar';
-import { supabase } from '@/lib/supabase';
-import { ControlEntry as SupabaseControlEntry, BoxData as SupabaseBoxData } from '@/lib/supabase';
-import { ControlEntry, BoxData } from '@/types';
+import { Box, Truck } from 'lucide-react';
+import { ControlEntry, BoxData, BoxStatus } from '@/types';
 
 export default function Index() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'prebox' | 'trip'>('prebox');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'prebox' | 'trip' | 'backup'>('prebox');
   const [tableEntries, setTableEntries] = useState<ControlEntry[]>([]);
-  const [boxData, setBoxData] = useState<BoxData[]>([]);
+  const [boxData, setBoxData] = useState<BoxData[]>(() => {
+    const savedBoxes = localStorage.getItem('boxData');
+    if (savedBoxes) {
+      const boxes = JSON.parse(savedBoxes);
+      if (boxes.length > 0) {
+        return boxes;
+      }
+    }
+
+    // Criar array com os números dos boxes
+    const boxNumbers = [
+      // 50-56
+      ...Array.from({ length: 7 }, (_, i) => i + 50),
+      // 300-356
+      ...Array.from({ length: 57 }, (_, i) => i + 300)
+    ];
+
+    // Criar boxes iniciais
+    const initialBoxes = boxNumbers.map(num => ({
+      id: num.toString().padStart(3, '0'),
+      trip: '',
+      status: 'free' as BoxStatus,
+      lastUpdate: new Date().toISOString()
+    }));
+
+    localStorage.setItem('boxData', JSON.stringify(initialBoxes));
+    return initialBoxes;
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Função para converter SupabaseControlEntry para ControlEntry
-  const convertSupabaseToControlEntry = (entry: SupabaseControlEntry): ControlEntry => ({
-    date: new Date(entry.created_at).toLocaleDateString('pt-BR'),
-    time: '',
-    oldTrip: '',
-    preBox: entry.pre_box.toString(),
-    boxInside: '',
-    quantity: entry.quantity.toString(),
-    shift: entry.shift.toString(),
-    cargoType: '',
-    region: entry.region,
-    status: '',
-    manifestDate: '',
-    trip: entry.trip
-  });
-
-  // Função para converter SupabaseBoxData para BoxData
-  const convertSupabaseToBoxData = (box: SupabaseBoxData): BoxData => ({
-    id: box.id,
-    trip: box.trip,
-    status: box.status,
-    lastUpdate: box.created_at
-  });
 
   // Carregar dados iniciais
   useEffect(() => {
-    const loadData = async () => {
-      // Carregar entradas da tabela
-      const { data: entries, error: entriesError } = await supabase
-        .from('control_entries')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (entriesError) {
-        console.error('Erro ao carregar entradas:', entriesError);
-        return;
-      }
-
-      if (entries) {
-        setTableEntries(entries.map(convertSupabaseToControlEntry));
-      }
-
-      // Carregar dados dos boxes
-      const { data: boxes, error: boxesError } = await supabase
-        .from('box_data')
-        .select('*')
-        .order('id');
-
-      if (boxesError) {
-        console.error('Erro ao carregar boxes:', boxesError);
-        return;
-      }
-
-      if (boxes) {
-        setBoxData(boxes.map(convertSupabaseToBoxData));
+    const loadData = () => {
+      const savedEntries = localStorage.getItem('tableEntries');
+      if (savedEntries) {
+        setTableEntries(JSON.parse(savedEntries));
       }
     };
 
     loadData();
   }, []);
 
-  // Sincronizar dados em tempo real
-  useEffect(() => {
-    const controlEntriesSubscription = supabase
-      .channel('control_entries_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'control_entries' }, 
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setTableEntries(prev => [convertSupabaseToControlEntry(payload.new as SupabaseControlEntry), ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedEntry = payload.new as SupabaseControlEntry;
-            setTableEntries(prev => prev.map(entry => 
-              entry.trip === updatedEntry.trip && entry.preBox === updatedEntry.pre_box.toString() 
-                ? convertSupabaseToControlEntry(updatedEntry) 
-                : entry
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            const deletedEntry = payload.old as SupabaseControlEntry;
-            setTableEntries(prev => prev.filter(entry => 
-              entry.trip !== deletedEntry.trip || entry.preBox !== deletedEntry.pre_box.toString()
-            ));
-          }
-        }
-      )
-      .subscribe();
-
-    const boxDataSubscription = supabase
-      .channel('box_data_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'box_data' }, 
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setBoxData(prev => [...prev, convertSupabaseToBoxData(payload.new as SupabaseBoxData)]);
-          } else if (payload.eventType === 'UPDATE') {
-            setBoxData(prev => prev.map(box => 
-              box.id === payload.new.id ? convertSupabaseToBoxData(payload.new as SupabaseBoxData) : box
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setBoxData(prev => prev.filter(box => box.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      controlEntriesSubscription.unsubscribe();
-      boxDataSubscription.unsubscribe();
-    };
-  }, []);
-
-  const handleViewChange = (view: 'dashboard' | 'prebox' | 'trip') => {
+  const handleViewChange = (view: 'dashboard' | 'prebox' | 'trip' | 'backup') => {
     setCurrentView(view);
   };
 
+  const toggleSidebar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSidebarOpen(prev => !prev);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar 
         onViewChange={handleViewChange} 
         isOpen={isSidebarOpen}
         tableEntries={tableEntries}
         boxData={boxData}
       />
-      <div className={`transition-all duration-300 ${isSidebarOpen ? 'pl-64' : 'pl-0'}`}>
-        <div className="p-4">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-background border"
-          >
-            {isSidebarOpen ? '←' : '→'}
-          </button>
+      
+      <main className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className="sticky top-0 z-50 bg-white border-b">
+          <div className="flex items-center p-4">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              {isSidebarOpen ? '←' : '☰'}
+            </button>
+            <h1 className="text-xl font-bold ml-4">SISTEMA DE CONTROLE DE PRÉ-BOX</h1>
+          </div>
 
+          <div className="flex justify-center space-x-8 p-2">
+            <button
+              onClick={() => handleViewChange('prebox')}
+              className={`flex items-center space-x-2 px-4 py-2 ${
+                currentView === 'prebox'
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Box className="h-4 w-4" />
+              <span>Controle de Pré-Box</span>
+            </button>
+            <button
+              onClick={() => handleViewChange('trip')}
+              className={`flex items-center space-x-2 px-4 py-2 ${
+                currentView === 'trip'
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Truck className="h-4 w-4" />
+              <span>Controle de Viagem</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4">
           {currentView === 'dashboard' && (
             <Dashboard tableEntries={tableEntries} boxData={boxData} />
           )}
 
           {currentView === 'prebox' && (
-            <BoxGrid
-              tableEntries={tableEntries}
-              onBoxDataChange={setBoxData}
-              initialBoxData={boxData}
-            />
+            <div className="bg-white rounded-lg p-6">
+              <BoxGrid
+                tableEntries={tableEntries}
+                onBoxDataChange={setBoxData}
+                initialBoxData={boxData}
+              />
+            </div>
           )}
 
           {currentView === 'trip' && (
-            <ControlTable
-              entries={tableEntries}
-              onEntriesChange={setTableEntries}
-              availablePreBoxes={boxData
-                .filter(box => box.status === 'free')
-                .map(box => parseInt(box.id))
-                .sort((a, b) => a - b)
-              }
-              tableTitle="Controle de Viagem"
-              boxData={boxData}
-            />
+            <div className="bg-white rounded-lg p-6">
+              <ControlTable
+                entries={tableEntries}
+                onEntriesChange={setTableEntries}
+                availablePreBoxes={boxData
+                  .filter(box => box.status === 'free')
+                  .map(box => box.id)
+                }
+                tableTitle="Controle de Viagem"
+                boxData={boxData}
+              />
+            </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-export type BoxStatus = 'blocked' | 'free' | 'occupied';
+export type BoxStatus = 'free' | 'occupied' | 'blocked';
 
 export interface BoxData {
   id: string;
@@ -14,8 +14,8 @@ export interface ControlEntry {
   oldTrip: string;
   preBox: string;
   boxInside: string;
-  quantity: number | string;
-  shift: number | string;
+  quantity: string;
+  shift: string;
   cargoType: string;
   region: string;
   status: string;

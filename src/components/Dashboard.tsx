@@ -18,7 +18,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { BoxData, ControlEntry } from '@/types';
+import { ControlEntry, BoxData } from '@/types';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from 'lucide-react';
@@ -30,19 +30,16 @@ interface DashboardProps {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-const Dashboard = ({ tableEntries, boxData }: DashboardProps) => {
+const Dashboard: React.FC<DashboardProps> = ({ tableEntries, boxData }) => {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  // Filtrar entradas por data
   const filteredEntries = useMemo(() => {
     if (!startDate && !endDate) return tableEntries;
     
     return tableEntries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      const start = startDate ? new Date(startDate) : new Date(0);
-      const end = endDate ? new Date(endDate) : new Date(8640000000000000);
-      return entryDate >= start && entryDate <= end;
+      const entryDate = entry.date;
+      return (!startDate || entryDate >= startDate) && (!endDate || entryDate <= endDate);
     });
   }, [tableEntries, startDate, endDate]);
 

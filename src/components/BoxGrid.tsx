@@ -15,50 +15,61 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { BoxData, BoxStatus, ControlEntry } from '@/types';
-import { supabase } from '@/lib/supabase';
-import { Button } from "@/components/ui/button";
 
 interface BoxProps {
   id: string;
   trip: string;
   status: BoxStatus;
   onStatusChange: (newStatus: BoxStatus) => void;
+  onDelete: () => void;
+  editMode: boolean;
+  tableEntries?: ControlEntry[];
 }
 
 interface BoxGridProps {
   tableEntries: ControlEntry[];
   onBoxDataChange: (boxData: BoxData[]) => void;
-  initialBoxData?: BoxData[];
+  initialBoxData: BoxData[];
 }
 
-const Box = ({ id, trip, status, onStatusChange, onDelete, editMode }: BoxProps & { onDelete: () => void, editMode: boolean }) => {
+const Box = ({ id, trip, status, onStatusChange, onDelete, editMode, tableEntries }: BoxProps) => {
   const { toast } = useToast();
 
   const getBackgroundColor = () => {
     switch (status) {
-      case 'blocked' as BoxStatus:
+      case 'blocked':
         return 'bg-red-500 text-white dark:bg-red-600';
-      case 'free' as BoxStatus:
-        return 'bg-green-400 dark:bg-green-600 text-white';
-      case 'occupied' as BoxStatus:
+      case 'free': {
+        const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
+        return linkedTrip 
+          ? 'bg-yellow-400 dark:bg-yellow-600 text-black dark:text-black'
+          : 'bg-green-400 dark:bg-green-600 text-white';
+      }
+      case 'occupied':
         return 'bg-[#FEC6A1] dark:bg-orange-900/30 dark:text-orange-100';
     }
   };
 
   const displayValue = () => {
-    if (status === 'blocked' as BoxStatus) return 'BLOQUEADO';
-    if (status === 'free' as BoxStatus) return '*LIVRE*';
-    return trip.toUpperCase();
+    if (status === 'blocked') return 'BLOQUEADO';
+    if (status === 'free') {
+      const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
+      return linkedTrip ? linkedTrip.toUpperCase() : '*LIVRE*';
+    }
+    if (status === 'occupied' && trip) return trip.toUpperCase();
+    return 'SEM VIAGEM';
   };
 
   const getStatusText = () => {
     switch (status) {
-      case 'blocked' as BoxStatus:
+      case 'blocked':
         return 'BOX BLOQUEADO';
-      case 'free' as BoxStatus:
-        return 'BOX LIVRE PARA USO';
-      case 'occupied' as BoxStatus:
-        return `BOX OCUPADO COM A VIAGEM ${trip.toUpperCase()}`;
+      case 'free': {
+        const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
+        return linkedTrip ? `BOX LIVRE - VIAGEM ${linkedTrip.toUpperCase()} VINCULADA` : 'BOX LIVRE PARA USO';
+      }
+      case 'occupied':
+        return trip ? `BOX OCUPADO COM A VIAGEM ${trip.toUpperCase()}` : 'BOX OCUPADO SEM VIAGEM';
     }
   };
 
@@ -73,9 +84,9 @@ const Box = ({ id, trip, status, onStatusChange, onDelete, editMode }: BoxProps 
     }
     
     const nextStatus: Record<BoxStatus, BoxStatus> = {
-      'occupied': 'free' as BoxStatus,
-      'free': 'blocked' as BoxStatus,
-      'blocked': 'occupied' as BoxStatus,
+      'occupied': 'free',
+      'free': 'blocked',
+      'blocked': 'occupied',
     };
     onStatusChange(nextStatus[status]);
   };
@@ -109,7 +120,7 @@ const Box = ({ id, trip, status, onStatusChange, onDelete, editMode }: BoxProps 
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="uppercase">{getStatusText()}</p>
+            <p>{getStatusText()}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -117,7 +128,11 @@ const Box = ({ id, trip, status, onStatusChange, onDelete, editMode }: BoxProps 
   );
 };
 
-export const BoxGrid = ({ tableEntries, onBoxDataChange, initialBoxData = [] }: BoxGridProps) => {
+const BoxGrid: React.FC<BoxGridProps> = ({
+  tableEntries,
+  onBoxDataChange,
+  initialBoxData
+}) => {
   const { toast } = useToast();
   const [boxData, setBoxData] = useState<BoxData[]>(initialBoxData);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -125,74 +140,65 @@ export const BoxGrid = ({ tableEntries, onBoxDataChange, initialBoxData = [] }: 
   const [filterValue, setFilterValue] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Carregar dados iniciais
   useEffect(() => {
-    const loadBoxData = async () => {
-      const { data, error } = await supabase
-        .from('box_data')
-        .select('*')
-        .order('id');
-
-      if (error) {
-        console.error('Erro ao carregar boxes:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        setBoxData(data);
-        onBoxDataChange(data);
-      } else if (initialBoxData.length > 0) {
-        // Inserir dados iniciais se não houver dados no banco
-        const { error: insertError } = await supabase
-          .from('box_data')
-          .insert(initialBoxData);
-
-        if (insertError) {
-          console.error('Erro ao inserir boxes iniciais:', insertError);
-          return;
+    const loadInitialBoxes = () => {
+      const savedBoxes = localStorage.getItem('boxData');
+      if (savedBoxes) {
+        const boxes = JSON.parse(savedBoxes);
+        if (boxes.length === 0) {
+          // Se não houver boxes, criar os iniciais (70 boxes)
+          const initialBoxes = Array.from({ length: 70 }, (_, i) => ({
+            id: `${i + 1}`,
+            trip: '',
+            status: 'free' as BoxStatus,
+            lastUpdate: new Date().toISOString()
+          }));
+          setBoxData(initialBoxes);
+          onBoxDataChange(initialBoxes);
+          localStorage.setItem('boxData', JSON.stringify(initialBoxes));
+        } else {
+          setBoxData(boxes);
+          onBoxDataChange(boxes);
         }
-
-        setBoxData(initialBoxData);
-        onBoxDataChange(initialBoxData);
+      } else {
+        // Se não houver dados no localStorage, criar boxes iniciais
+        const initialBoxes = Array.from({ length: 70 }, (_, i) => ({
+          id: `${i + 1}`,
+          trip: '',
+          status: 'free' as BoxStatus,
+          lastUpdate: new Date().toISOString()
+        }));
+        setBoxData(initialBoxes);
+        onBoxDataChange(initialBoxes);
+        localStorage.setItem('boxData', JSON.stringify(initialBoxes));
       }
     };
 
-    loadBoxData();
-  }, [initialBoxData, onBoxDataChange]);
+    loadInitialBoxes();
+  }, [onBoxDataChange]);
 
-  const handleStatusChange = async (id: string, newStatus: BoxData['status']) => {
-    const { error } = await supabase
-      .from('box_data')
-      .update({ status: newStatus })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao atualizar status do box:', error);
-      return;
-    }
-
-    const updatedBoxData = boxData.map(box => 
-      box.id === id ? { ...box, status: newStatus } : box
-    );
-
+  const handleStatusChange = (id: string, newStatus: BoxStatus) => {
+    const updatedBoxData = boxData.map(box => {
+      if (box.id === id) {
+        return {
+          ...box,
+          status: newStatus,
+          trip: newStatus === 'free' || newStatus === 'blocked' ? '' : box.trip,
+          lastUpdate: new Date().toISOString()
+        };
+      }
+      return box;
+    });
     setBoxData(updatedBoxData);
     onBoxDataChange(updatedBoxData);
+    localStorage.setItem('boxData', JSON.stringify(updatedBoxData));
   };
 
-  const handleDeleteBox = async (id: string) => {
-    const { error } = await supabase
-      .from('box_data')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao deletar box:', error);
-      return;
-    }
-
-    const updatedBoxData = boxData.filter(box => box.id !== id);
-    setBoxData(updatedBoxData);
-    onBoxDataChange(updatedBoxData);
+  const handleDelete = (id: string) => {
+    const updatedBoxes = boxData.filter(box => box.id !== id);
+    setBoxData(updatedBoxes);
+    onBoxDataChange(updatedBoxes);
+    localStorage.setItem('boxData', JSON.stringify(updatedBoxes));
   };
 
   const handleAddBox = () => {
@@ -213,13 +219,14 @@ export const BoxGrid = ({ tableEntries, onBoxDataChange, initialBoxData = [] }: 
     const newBox: BoxData = {
       id: newBoxId.toUpperCase(),
       trip: '',
-      status: 'free' as BoxStatus,
+      status: 'free',
       lastUpdate: new Date().toISOString()
     };
 
     const newBoxData = [...boxData, newBox];
     setBoxData(newBoxData);
     onBoxDataChange(newBoxData);
+    localStorage.setItem('boxData', JSON.stringify(newBoxData));
     
     toast({
       title: "BOX ADICIONADO",
@@ -229,6 +236,7 @@ export const BoxGrid = ({ tableEntries, onBoxDataChange, initialBoxData = [] }: 
 
   const handleSaveBoxState = () => {
     onBoxDataChange(boxData);
+    localStorage.setItem('boxData', JSON.stringify(boxData));
     toast({
       title: "ESTADO SALVO",
       description: "ESTADO ATUAL DOS BOXES FOI SALVO COM SUCESSO.",
@@ -345,15 +353,21 @@ export const BoxGrid = ({ tableEntries, onBoxDataChange, initialBoxData = [] }: 
               box.id.toLowerCase().includes(filterValue.toLowerCase()) ||
               box.trip.toLowerCase().includes(filterValue.toLowerCase())
             )
-            .map((box, index) => (
+            .sort((a, b) => {
+              const numA = parseInt((a.id || '').replace(/[^0-9]/g, '') || '0');
+              const numB = parseInt((b.id || '').replace(/[^0-9]/g, '') || '0');
+              return numA - numB;
+            })
+            .map((box) => (
               <Box
-                key={`${box.id}-${index}`}
+                key={box.id}
                 id={box.id}
                 trip={box.trip}
                 status={box.status}
                 onStatusChange={(newStatus) => handleStatusChange(box.id, newStatus)}
-                onDelete={() => handleDeleteBox(box.id)}
+                onDelete={() => handleDelete(box.id)}
                 editMode={isEditMode}
+                tableEntries={tableEntries}
               />
             ))}
         </div>
