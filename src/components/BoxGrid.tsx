@@ -36,38 +36,44 @@ const Box = ({ id, trip, status, onStatusChange, onDelete, editMode, tableEntrie
   const { toast } = useToast();
 
   const getBackgroundColor = () => {
+    const linkedTrip = tableEntries?.find(entry => entry.preBox === id && !entry.boxInside)?.trip;
+    if (linkedTrip) {
+      return 'bg-yellow-400 dark:bg-yellow-600 text-black dark:text-black';
+    }
+
     switch (status) {
       case 'blocked':
         return 'bg-red-500 text-white dark:bg-red-600';
-      case 'free': {
-        const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
-        return linkedTrip 
-          ? 'bg-yellow-400 dark:bg-yellow-600 text-black dark:text-black'
-          : 'bg-green-400 dark:bg-green-600 text-white';
-      }
+      case 'free':
+        return 'bg-green-400 dark:bg-green-600 text-white';
       case 'occupied':
         return 'bg-[#FEC6A1] dark:bg-orange-900/30 dark:text-orange-100';
     }
   };
 
   const displayValue = () => {
-    if (status === 'blocked') return 'BLOQUEADO';
-    if (status === 'free') {
-      const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
-      return linkedTrip ? linkedTrip.toUpperCase() : '*LIVRE*';
+    const linkedTrip = tableEntries?.find(entry => entry.preBox === id && !entry.boxInside)?.trip;
+    if (linkedTrip) {
+      return linkedTrip.toUpperCase();
     }
+
+    if (status === 'blocked') return 'BLOQUEADO';
+    if (status === 'free') return '*LIVRE*';
     if (status === 'occupied' && trip) return trip.toUpperCase();
     return 'SEM VIAGEM';
   };
 
   const getStatusText = () => {
+    const linkedTrip = tableEntries?.find(entry => entry.preBox === id && !entry.boxInside)?.trip;
+    if (linkedTrip) {
+      return `BOX COM VIAGEM ${linkedTrip.toUpperCase()} VINCULADA`;
+    }
+
     switch (status) {
       case 'blocked':
         return 'BOX BLOQUEADO';
-      case 'free': {
-        const linkedTrip = tableEntries?.find(entry => entry.preBox === id)?.trip;
-        return linkedTrip ? `BOX LIVRE - VIAGEM ${linkedTrip.toUpperCase()} VINCULADA` : 'BOX LIVRE PARA USO';
-      }
+      case 'free':
+        return 'BOX LIVRE PARA USO';
       case 'occupied':
         return trip ? `BOX OCUPADO COM A VIAGEM ${trip.toUpperCase()}` : 'BOX OCUPADO SEM VIAGEM';
     }
@@ -141,57 +147,68 @@ const BoxGrid: React.FC<BoxGridProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    const loadInitialBoxes = () => {
-      const savedBoxes = localStorage.getItem('boxData');
-      if (savedBoxes) {
-        const boxes = JSON.parse(savedBoxes);
-        if (boxes.length === 0) {
-          // Se não houver boxes, criar os iniciais (70 boxes)
-          const initialBoxes = Array.from({ length: 70 }, (_, i) => ({
-            id: `${i + 1}`,
-            trip: '',
-            status: 'free' as BoxStatus,
-            lastUpdate: new Date().toISOString()
-          }));
-          setBoxData(initialBoxes);
-          onBoxDataChange(initialBoxes);
-          localStorage.setItem('boxData', JSON.stringify(initialBoxes));
-        } else {
-          setBoxData(boxes);
-          onBoxDataChange(boxes);
-        }
-      } else {
-        // Se não houver dados no localStorage, criar boxes iniciais
-        const initialBoxes = Array.from({ length: 70 }, (_, i) => ({
-          id: `${i + 1}`,
-          trip: '',
-          status: 'free' as BoxStatus,
-          lastUpdate: new Date().toISOString()
-        }));
-        setBoxData(initialBoxes);
-        onBoxDataChange(initialBoxes);
-        localStorage.setItem('boxData', JSON.stringify(initialBoxes));
-      }
-    };
+    if (isEditMode) return;
 
-    loadInitialBoxes();
-  }, [onBoxDataChange]);
+    const updatedBoxData = boxData.map(box => {
+      const relatedEntries = tableEntries.filter(entry => entry.preBox === box.id);
+      
+      if (relatedEntries.length === 0) {
+        return { ...box, status: 'free' as BoxStatus, trip: '' };
+      }
+
+      const allEntriesHaveBoxD = relatedEntries.every(entry => entry.boxInside);
+      
+      if (allEntriesHaveBoxD) {
+        return { ...box, status: 'free' as BoxStatus, trip: '' };
+      } else {
+        const activeEntry = relatedEntries.find(entry => !entry.boxInside);
+        return {
+          ...box,
+          status: 'occupied' as BoxStatus,
+          trip: activeEntry?.trip || ''
+        };
+      }
+    });
+
+    const hasChanges = updatedBoxData.some((box, index) => {
+      return box.status !== boxData[index].status || box.trip !== boxData[index].trip;
+    });
+
+    if (hasChanges) {
+      setBoxData(updatedBoxData);
+      onBoxDataChange(updatedBoxData);
+      localStorage.setItem('boxData', JSON.stringify(updatedBoxData));
+    }
+  }, [tableEntries, onBoxDataChange, boxData, isEditMode]);
 
   const handleStatusChange = (id: string, newStatus: BoxStatus) => {
+    if (!isEditMode) return;
+
     const updatedBoxData = boxData.map(box => {
       if (box.id === id) {
-        return {
+        const newBox = {
           ...box,
           status: newStatus,
           trip: newStatus === 'free' || newStatus === 'blocked' ? '' : box.trip,
           lastUpdate: new Date().toISOString()
         };
+        return newBox;
       }
       return box;
     });
+
     setBoxData(updatedBoxData);
     onBoxDataChange(updatedBoxData);
     localStorage.setItem('boxData', JSON.stringify(updatedBoxData));
+
+    toast({
+      title: "BOX ATUALIZADO",
+      description: `O status do BOX ${id} foi alterado para ${
+        newStatus === 'free' ? 'LIVRE' : 
+        newStatus === 'blocked' ? 'BLOQUEADO' : 'OCUPADO'
+      }.`,
+      duration: 2000,
+    });
   };
 
   const handleDelete = (id: string) => {

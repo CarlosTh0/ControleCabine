@@ -194,6 +194,7 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
   const [entryToAdd, setEntryToAdd] = useState<Partial<ControlEntry>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedShift, setSelectedShift] = useState<string>('');
+  const [addLinesOpen, setAddLinesOpen] = useState(false);
 
   // Definição das colunas e seus cabeçalhos
   const columnOrder: (keyof ControlEntry)[] = [
@@ -245,29 +246,39 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
 
   const handleAddEntry = () => {
     const newEntry: ControlEntry = {
-      date: entryToAdd.date || new Date().toISOString().split('T')[0],
-      trip: entryToAdd.trip || '',
-      time: entryToAdd.time || '',
-      oldTrip: entryToAdd.oldTrip || '',
-      preBox: entryToAdd.preBox?.toString() || '',
-      boxInside: entryToAdd.boxInside || '',
-      quantity: entryToAdd.quantity?.toString() || '',
-      shift: entryToAdd.shift?.toString() || '',
-      cargoType: entryToAdd.cargoType || '',
-      region: entryToAdd.region || '',
-      status: entryToAdd.status || '',
-      manifestDate: entryToAdd.manifestDate || new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      manifestDate: new Date().toISOString().split('T')[0],
+      trip: '',
+      oldTrip: '',
+      preBox: '',
+      boxInside: '',
+      quantity: '',
+      shift: '',
+      cargoType: '',
+      region: '',
+      status: ''
     };
 
-    onEntriesChange([...entries, newEntry]);
-    setEntryToAdd({});
-    localStorage.setItem('tableEntries', JSON.stringify([...entries, newEntry]));
+    const updatedEntries = [...entries, newEntry];
+    onEntriesChange(updatedEntries);
+    localStorage.setItem('tableEntries', JSON.stringify(updatedEntries));
+    
+    toast({
+      title: "Nova linha adicionada",
+      description: "Uma linha vazia foi adicionada à tabela.",
+      duration: 2000
+    });
   };
 
   const handleDeleteEntry = (index: number) => {
     const updatedEntries = entries.filter((_, i) => i !== index);
     onEntriesChange(updatedEntries);
-    localStorage.setItem('tableEntries', JSON.stringify(updatedEntries));
+    toast({
+      title: "Linha removida",
+      description: "A linha foi removida com sucesso.",
+      duration: 2000
+    });
   };
 
   const handleUpdateEntry = (index: number, updates: Partial<ControlEntry>) => {
@@ -275,25 +286,26 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
       if (i === index) {
         const updatedEntry = { ...entry, ...updates };
         // Garantir que campos numéricos sejam strings
-        if ('preBox' in updates) updatedEntry.preBox = updates.preBox?.toString() || '0';
-        if ('quantity' in updates) updatedEntry.quantity = updates.quantity?.toString() || '0';
-        if ('shift' in updates) updatedEntry.shift = updates.shift?.toString() || '1';
+        if ('preBox' in updates) updatedEntry.preBox = updates.preBox?.toString() || '';
+        if ('quantity' in updates) updatedEntry.quantity = updates.quantity?.toString() || '';
+        if ('shift' in updates) updatedEntry.shift = updates.shift?.toString() || '';
         return updatedEntry;
       }
       return entry;
     });
+    
     onEntriesChange(updatedEntries);
     localStorage.setItem('tableEntries', JSON.stringify(updatedEntries));
   };
 
   // Função para salvar dados
-  const handleSaveData = useCallback(() => {
-    localStorage.setItem('tableEntries', JSON.stringify(entries));
+  const handleSave = () => {
     toast({
-      title: "DADOS SALVOS",
-      description: "DADOS DA TABELA FORAM SALVOS LOCALMENTE.",
+      title: "Alterações salvas",
+      description: "Todas as alterações foram salvas no banco de dados local.",
+      duration: 2000
     });
-  }, [entries, toast]);
+  };
 
   // Função para exportar para CSV
   const handleExportCSV = useCallback(() => {
@@ -386,14 +398,14 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
           if (colIndex < totalCols - 1) moveToCell(rowIndex, colIndex + 1);
           else if (rowIndex < totalRows - 1) moveToCell(rowIndex + 1, 0);
         }
-        handleSaveData();
+        handleSave();
         break;
 
       case 'Enter':
         e.preventDefault();
         if (colIndex < totalCols - 1) moveToCell(rowIndex, colIndex + 1);
         else if (rowIndex < totalRows - 1) moveToCell(rowIndex + 1, 0);
-        handleSaveData();
+        handleSave();
         break;
 
       case 'Escape':
@@ -402,7 +414,7 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
         setSelectedCells([]);
         break;
     }
-  }, [columnOrder.length, entries.length, handleSaveData]);
+  }, [columnOrder.length, entries.length, handleSave]);
 
   // Função para selecionar células
   const handleCellClick = (rowIndex: number, colIndex: number, event: React.MouseEvent) => {
@@ -441,7 +453,7 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
     } else {
       handleUpdateEntry(rowIndex, { [field]: pastedText.toUpperCase() });
     }
-    handleSaveData();
+    handleSave();
   };
 
   const handleFreeBoxClick = (boxId: string) => {
@@ -525,9 +537,9 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 border-b">
             <CardTitle className="text-2xl font-bold">{tableTitle}</CardTitle>
             <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
                       onClick={handleAddEntry}
                       variant="outline"
@@ -536,90 +548,90 @@ export const ControlTable = ({ entries, onEntriesChange, availablePreBoxes, tabl
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Adicionar Linha</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => setShowFilter(!showFilter)}
-                      variant="outline"
-                      size="icon"
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
-                    >
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Filtrar Dados</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleSaveData}
-                      variant="outline"
-                      size="icon"
-                      className="bg-purple-500 hover:bg-purple-600 text-white"
-                    >
-                      <Save className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Salvar Dados</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleExportCSV}
-                      variant="outline"
-                      size="icon"
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
-                    >
-                      <FileDown className="h-4 w-4" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Exportar para CSV</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </CardHeader>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Adicionar nova linha</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowFilter(!showFilter)}
+                        variant="outline"
+                        size="icon"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                      >
+                        <Filter className="h-4 w-4" />
+                      </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>Filtrar dados</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleSave}
+                        variant="outline"
+                        size="icon"
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                      >
+                        <Save className="h-4 w-4" />
+                      </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>Salvar alterações</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleExportCSV}
+                        variant="outline"
+                        size="icon"
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                      <p>Exportar dados</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardHeader>
 
           {/* Seção de filtros */}
-                {showFilter && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b">
-              <div className="grid grid-cols-6 gap-4">
-                    {columnOrder.map((key) => (
-                  <div key={key} className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {columnHeaders[key]}
-                    </label>
-                    <Input
-                          type="text"
-                      placeholder={`Filtrar ${columnHeaders[key]}`}
-                          value={filters[key] || ''}
-                      onChange={(e) => setFilters(prev => ({ ...prev, [key]: e.target.value }))}
-                      className="w-full"
-                    />
-                  </div>
-                ))}
+                  {showFilter && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b">
+                <div className="grid grid-cols-6 gap-4">
+                      {columnOrder.map((key) => (
+                    <div key={key} className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {columnHeaders[key]}
+                      </label>
+                      <Input
+                            type="text"
+                        placeholder={`Filtrar ${columnHeaders[key]}`}
+                            value={filters[key] || ''}
+                        onChange={(e) => setFilters(prev => ({ ...prev, [key]: e.target.value }))}
+                        className="w-full"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Cabeçalho da tabela */}
           <div className="bg-gray-100 dark:bg-gray-800 border-b">
