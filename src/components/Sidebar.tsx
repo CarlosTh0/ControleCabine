@@ -6,74 +6,101 @@ import {
   FileText, 
   Clock, 
   Settings,
+  Menu,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ControlEntry, BoxData } from '@/types';
-import { twMerge } from 'tailwind-merge';
+import { cn } from "@/lib/utils";
+import { NavLink } from 'react-router-dom';
+import {
+  FaTruck,
+  FaTachometerAlt,
+  FaBoxes,
+  FaFileAlt,
+  FaClock,
+  FaCog,
+} from 'react-icons/fa';
 
 interface SidebarProps {
-  onViewChange: (view: 'trip' | 'dashboard' | 'prebox' | 'reports' | 'shift' | 'settings') => void;
-  isOpen: boolean;
-  tableEntries: ControlEntry[];
-  boxData: BoxData[];
   activeView: string;
+  onViewChange: (view: string) => void;
+  isMobile?: boolean;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
-const Sidebar = ({ onViewChange, isOpen, tableEntries, boxData, activeView }: SidebarProps) => {
-  const menuItems = [
-    { id: 'trip', label: 'Controle de Viagem', icon: Truck },
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
-    { id: 'prebox', label: 'Gerenciar Pré-Box', icon: Box },
-    { id: 'reports', label: 'Relatórios', icon: FileText },
-    { id: 'shift', label: 'Fechamento de Turno', icon: Clock },
-    { id: 'settings', label: 'Configurações', icon: Settings }
-  ];
+const menuItems = [
+  { id: 'trip', label: 'Controle de Viagem', icon: <FaTruck /> },
+  { id: 'prebox', label: 'Gerenciar Pré-Box', icon: <FaBoxes /> },
+  { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
+  { id: 'reports', label: 'Relatórios', icon: <FaFileAlt /> },
+  { id: 'shift', label: 'Fechamento de Turno', icon: <FaClock /> },
+  { id: 'settings', label: 'Configurações', icon: <FaCog /> },
+];
 
+const Sidebar = ({ activeView, onViewChange, isMobile = false, isCollapsed = false, onToggle }: SidebarProps) => {
   return (
     <aside 
-      className={twMerge(
-        "fixed left-0 top-0 h-full bg-white w-64 shadow-lg z-50 transition-all duration-300",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+      className={cn(
+        "fixed left-0 top-0 z-40 h-screen bg-white transition-all duration-300",
+        isCollapsed ? "w-16" : "w-64",
+        "border-r border-gray-200"
       )}
     >
       <div className="flex flex-col h-full">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold text-[#1197CE]">ControleCabine</h1>
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          {!isCollapsed && (
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-[#1197CE] tracking-tight">
+                ControleCabine
+              </h1>
+            </div>
+          )}
+          <button
+            onClick={onToggle}
+            className={cn(
+              "p-2 rounded-md hover:bg-gray-100 transition-colors",
+              isCollapsed ? "ml-0" : "ml-auto"
+            )}
+            title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            ) : (
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 px-2 py-4 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = activeView === item.id;
+            
             return (
-              <Button
+              <NavLink
                 key={item.id}
-                type="button"
-                variant="ghost"
-                className={twMerge(
-                  "w-full justify-start text-gray-700 hover:bg-[#F3F3F3]",
-                  activeView === item.id && "bg-[#F3F3F3] text-[#1197CE]"
-                )}
-                onClick={() => onViewChange(item.id as any)}
+                to={`/${item.id}`}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "hover:bg-gray-50",
+                    isActive ? "bg-[#F3F3F3] text-[#1197CE]" : "text-gray-700",
+                    isCollapsed ? "justify-center" : "justify-start"
+                  )
+                }
               >
-                <Icon className="mr-3 h-5 w-5" />
-                {item.label}
-              </Button>
+                <span className={cn(
+                  "flex-shrink-0",
+                  isCollapsed ? "w-6 h-6" : "w-5 h-5 mr-3"
+                )}>
+                  {Icon}
+                </span>
+                {!isCollapsed && <span>{item.label}</span>}
+              </NavLink>
             );
           })}
         </nav>
-
-        <div className="p-4 border-t">
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-gray-700 hover:bg-[#F3F3F3]"
-            onClick={() => onViewChange('settings')}
-          >
-            <Settings className="mr-3 h-5 w-5" />
-            Configurações
-          </Button>
-        </div>
       </div>
     </aside>
   );

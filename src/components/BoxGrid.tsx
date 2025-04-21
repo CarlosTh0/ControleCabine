@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { BoxData, BoxStatus, ControlEntry } from '@/types';
 import { cn } from "@/lib/utils";
+import { updateAllBoxes } from '@/lib/db';
 
 interface BoxProps {
   id: string;
@@ -31,7 +32,7 @@ export interface BoxGridProps {
   boxData: BoxData[];
   onBoxDataChange: (newBoxData: BoxData[]) => void;
   tableEntries: ControlEntry[];
-  readOnly?: boolean;
+  isEditable?: boolean;
   compact?: boolean;
 }
 
@@ -156,12 +157,12 @@ const Box = ({ id, trip, status, onStatusChange, onDelete, editMode, tableEntrie
   );
 };
 
-export default function BoxGrid({ boxData, onBoxDataChange, tableEntries, readOnly = false, compact = false }: BoxGridProps) {
+export default function BoxGrid({ boxData, onBoxDataChange, tableEntries, isEditable = false, compact = false }: BoxGridProps) {
   const { toast } = useToast();
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterValue, setFilterValue] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(isEditable);
 
   useEffect(() => {
     if (isEditMode) return;
@@ -264,13 +265,22 @@ export default function BoxGrid({ boxData, onBoxDataChange, tableEntries, readOn
     });
   };
 
-  const handleSaveBoxState = () => {
-    onBoxDataChange(boxData);
-    localStorage.setItem('boxData', JSON.stringify(boxData));
-    toast({
-      title: "ESTADO SALVO",
-      description: "ESTADO ATUAL DOS BOXES FOI SALVO COM SUCESSO.",
-    });
+  const handleSaveBoxState = async () => {
+    try {
+      await updateAllBoxes(boxData);
+      localStorage.setItem('boxData', JSON.stringify(boxData));
+      toast({
+        title: "ESTADO SALVO",
+        description: "ESTADO ATUAL DOS BOXES FOI SALVO COM SUCESSO.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar estado:', error);
+      toast({
+        title: "ERRO AO SALVAR",
+        description: "NÃO FOI POSSÍVEL SALVAR O ESTADO DOS BOXES.",
+        variant: "destructive"
+      });
+    }
   };
 
   const toggleEditMode = () => {

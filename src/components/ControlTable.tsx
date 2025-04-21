@@ -213,7 +213,7 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
     'manifestDate'
   ];
 
-  const columnHeaders: Record<keyof ControlEntry, string> = {
+  const columnHeaders: Partial<Record<keyof ControlEntry, string>> = {
     date: "DATA",
     trip: "VIAGEM",
     time: "HORA",
@@ -301,11 +301,22 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
 
   // Função para salvar dados
   const handleSave = () => {
-    toast({
-      title: "Alterações salvas",
-      description: "Todas as alterações foram salvas no banco de dados local.",
-      duration: 2000
-    });
+    try {
+      onEntriesChange(entries);
+      toast({
+        title: "Alterações salvas",
+        description: "Todas as alterações foram salvas com sucesso.",
+        duration: 2000
+      });
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações.",
+        variant: "destructive",
+        duration: 3000
+      });
+    }
   };
 
   // Função para exportar para CSV
@@ -518,7 +529,7 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
         onBoxClick={handleFreeBoxClick}
         onQuickAdd={handleQuickAdd}
       />
-      <Card className="w-full shadow-lg border-0">
+      <Card className="w-full shadow-lg border-0 overflow-x-auto">
         <div className="sticky top-0 z-[100] bg-white dark:bg-gray-900">
           {/* Estilo para remover setas do input number */}
           <style>
@@ -530,6 +541,31 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
               }
               input[type="number"] {
                 -moz-appearance: textfield;
+              }
+              .table-container {
+                width: 100%;
+                overflow: hidden;
+              }
+              .table-content {
+                width: 100%;
+              }
+              .table-grid {
+                display: grid;
+                grid-template-columns: 
+                  100px  /* DATA */
+                  95px   /* VIAGEM */
+                  75px   /* HORA */
+                  115px  /* VIAGEM ANTERIOR */
+                  75px   /* PRÉ-BOX */
+                  75px   /* BOX-D */
+                  95px   /* QUANTIDADE */
+                  70px   /* TURNO */
+                  125px  /* TIPO DE CARGA */
+                  85px   /* REGIÃO */
+                  105px  /* STATUS */
+                  100px  /* DATA SEGUINTE */
+                  40px;  /* AÇÕES */
+                gap: 0;
               }
             `}
           </style>
@@ -613,10 +649,11 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
           </CardHeader>
 
           {/* Seção de filtros */}
-                  {showFilter && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b">
-                <div className="grid grid-cols-6 gap-4">
-                      {columnOrder.map((key) => (
+          {showFilter && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b table-container">
+              <div className="table-content">
+                <div className="table-grid gap-4">
+                  {columnOrder.map((key) => (
                     <div key={key} className="space-y-2">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {columnHeaders[key]}
@@ -632,21 +669,24 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
           {/* Cabeçalho da tabela */}
-          <div className="bg-gray-100 dark:bg-gray-800 border-b">
-            <div className="grid grid-cols-[120px,100px,80px,120px,100px,80px,100px,80px,120px,80px,120px,120px,35px] gap-0">
-              {columnOrder.map((key) => (
-                <div
-                  key={key}
-                  className="text-center p-2 font-bold border-r last:border-r-0 uppercase text-xs overflow-hidden text-ellipsis whitespace-nowrap"
-                >
-                  {columnHeaders[key]}
+          <div className="bg-gray-100 dark:bg-gray-800 border-b table-container">
+            <div className="table-content">
+              <div className="table-grid">
+                {columnOrder.map((key) => (
+                  <div
+                    key={key}
+                    className="text-center p-2 font-bold border-r last:border-r-0 uppercase text-xs overflow-hidden text-ellipsis whitespace-nowrap"
+                  >
+                    {columnHeaders[key]}
+                  </div>
+                ))}
+                <div className="text-center p-2 font-bold uppercase text-xs">
+                  AÇÕES
                 </div>
-              ))}
-              <div className="text-center p-2 font-bold uppercase text-xs">
-                AÇÕES
               </div>
             </div>
           </div>
@@ -654,10 +694,10 @@ export const ControlTable = ({ entries, onEntriesChange, boxData, onBoxDataChang
 
         {/* Corpo da tabela */}
         <CardContent className="p-0">
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 250px)" }}>
-            <div className="min-w-full">
+          <div className="overflow-y-auto table-container" style={{ maxHeight: "calc(100vh - 250px)" }}>
+            <div className="table-content">
               {filteredEntries.map((entry, rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-[120px,100px,80px,120px,100px,80px,100px,80px,120px,80px,120px,120px,35px] gap-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <div key={rowIndex} className="table-grid hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   {columnOrder.map((key, colIndex) => (
                     <div
                       key={`${rowIndex}-${key}`}

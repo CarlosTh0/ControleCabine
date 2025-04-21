@@ -1,0 +1,44 @@
+import { NavLink } from 'react-router-dom';
+import {
+  FaTruck,
+  FaTachometerAlt,
+  FaBoxes,
+  FaFileAlt,
+  FaClock,
+  FaCog,
+} from 'react-icons/fa';
+
+const Sidebar = () => {
+  const menuItems = [
+    { name: 'Controle de Viagem', path: '/controle-viagem', icon: <FaTruck /> },
+    { name: 'Dashboard', path: '/dashboard', icon: <FaTachometerAlt /> },
+    { name: 'Gerenciar Pré-Box', path: '/gerenciar-prebox', icon: <FaBoxes /> },
+    { name: 'Relatórios', path: '/relatorios', icon: <FaFileAlt /> },
+    { name: 'Fechamento de Turno', path: '/fechamento-turno', icon: <FaClock /> },
+    { name: 'Configurações', path: '/configuracoes', icon: <FaCog /> },
+  ];
+
+  return (
+    <div className="w-64 h-screen bg-white shadow-md">
+      <div className="p-6 text-2xl font-bold text-blue-600">ControleCabine</div>
+      <nav className="mt-4">
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 ${
+                isActive ? 'bg-gray-200 font-semibold' : ''
+              }`
+            }
+          >
+            <span className="mr-3">{item.icon}</span>
+            {item.name}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+export default Sidebar;

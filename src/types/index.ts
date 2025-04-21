@@ -9,14 +9,32 @@ export type BoxData = {
 };
 
 export type ControlEntry = {
-  id: string;
+  id?: string;
   date: string;
   time: string;
+  trip: string;
+  oldTrip?: string;
   preBox: string;
   boxInside: string;
-  boxOutside: string;
-  driver: string;
-  plate: string;
-  destination: string;
-  observation: string;
-}; 
+  quantity?: string | number;
+  shift?: string | number;
+  cargoType?: string;
+  region?: string;
+  status?: string;
+  manifestDate?: string;
+};
+
+export interface BackupConfig {
+  autoBackup: boolean;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  keepCount: number;
+  lastBackup?: string;
+  storageLocation: string;
+  compression: boolean;
+  notifyOnComplete: boolean;
+  encryptBackup: boolean;
+  scheduleTime?: string;
+  excludedData?: string[];
+  validateBeforeRestore: boolean;
+  createBackupBeforeRestore: boolean;
+} 

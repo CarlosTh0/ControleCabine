@@ -31,18 +31,6 @@ class Database {
             const boxStore = db.createObjectStore('boxes', { keyPath: 'id' });
             boxStore.createIndex('status', 'status');
             boxStore.createIndex('trip', 'trip');
-
-            // Adiciona boxes iniciais
-            const transaction = db.transaction(['boxes'], 'readwrite');
-            const store = transaction.objectStore('boxes');
-            
-            // Cria 70 boxes iniciais
-            Array.from({ length: 70 }, (_, i) => ({
-              id: `${i + 1}`,
-              trip: '',
-              status: 'free',
-              lastUpdate: new Date().toISOString()
-            })).forEach(box => store.add(box));
           }
 
           // Cria store para entradas de controle
@@ -64,14 +52,7 @@ class Database {
     console.log('Usando localStorage como fallback');
     // Verifica se já existem dados no localStorage
     if (!localStorage.getItem('boxData')) {
-      // Cria boxes iniciais
-      const initialBoxes = Array.from({ length: 70 }, (_, i) => ({
-        id: `${i + 1}`,
-        trip: '',
-        status: 'free',
-        lastUpdate: new Date().toISOString()
-      }));
-      localStorage.setItem('boxData', JSON.stringify(initialBoxes));
+      localStorage.setItem('boxData', JSON.stringify([]));
     }
     
     if (!localStorage.getItem('tableEntries')) {
@@ -113,6 +94,32 @@ class Database {
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
+    });
+  }
+
+  async updateAllBoxes(boxes: BoxData[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('Database not initialized'));
+        return;
+      }
+
+      const transaction = this.db.transaction(['boxes'], 'readwrite');
+      const store = transaction.objectStore('boxes');
+      
+      // Limpa todos os boxes existentes
+      store.clear();
+
+      // Adiciona os novos boxes
+      boxes.forEach(box => {
+        store.add({
+          ...box,
+          lastUpdate: new Date().toISOString()
+        });
+      });
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
     });
   }
 
@@ -183,6 +190,7 @@ db.init().catch(console.error);
 
 export const getBoxes = () => db.getBoxes();
 export const updateBox = (id: string, status: string, trip?: string) => db.updateBox(id, status, trip);
+export const updateAllBoxes = (boxes: BoxData[]) => db.updateAllBoxes(boxes);
 export const getEntries = () => db.getEntries();
 export const addEntry = (entry: Omit<ControlEntry, 'id'>) => db.addEntry(entry);
 export const clearEntries = () => db.clearEntries();
